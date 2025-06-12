@@ -1,0 +1,109 @@
+/* TeacherProfil.css */
+.teacher-profile-container {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    padding: 2rem 5%;
+    gap: 2rem;
+  }
+  
+  .profile-sidebar {
+    flex: 0 0 300px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    height: fit-content;
+  }
+  
+  .profile-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  
+  .avatar-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  
+  .avatar-icon {
+    font-size: 80px;
+    color: #555;
+  }
+  
+  .profile-info, .profile-about {
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .profile-info h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #444;
+  }
+  
+  .profile-info p {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+  }
+  
+  .profile-about h3 {
+    color: #444;
+  }
+  
+  .profile-about p {
+    color: #666;
+    line-height: 1.6;
+  }
+  
+  .profile-main-content {
+    flex: 1;
+  }
+  
+  .welcome-section {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .loading-container,
+  .error-container,
+  .no-data-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+  }
+  
+  .logout-btn {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+  }
+  
+  .logout-btn:hover {
+    background-color: #c82333;
+  }

@@ -1,0 +1,61 @@
+.student-doc-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .semester-selector {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .semester-selector button {
+    padding: 8px 16px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .semester-selector button.active {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+  }
+  
+  .matieres-section {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+  }
+  
+  .matieres-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+  }
+  
+  .matiere-item {
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    background-color: white;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .matiere-icon {
+    font-size: 1.2em;
+  }
+  
+  .no-matieres {
+    color: #666;
+    text-align: center;
+    padding: 20px;
+  }

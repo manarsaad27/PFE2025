@@ -1,0 +1,127 @@
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px; /* Ajoute un peu d'espace autour de l'en-tête */
+    background-color: #387b9f; /* Ajoute une couleur de fond pour l'en-tête */
+  }
+  
+  nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center; /* Alignement vertical centré */
+    margin: 0;
+    padding: 0;
+  }
+  
+  nav ul li {
+    margin-left: 20px; /* Espace entre les éléments de la liste */
+  }
+  
+  
+  
+  nav ul li a {
+    text-decoration: none;
+    color: #efe8e8; /* Couleur du texte des liens */
+    font-weight: bold;
+  }
+  
+  /* Styles pour les écrans plus petits (mobile) */
+  @media (max-width: 768px) {
+    header {
+      flex-direction: column;
+      align-items: flex-start; /* Alignement à gauche sur mobile */
+    }
+  }
+  
+    nav ul {
+      flex-direction: column;
+      align-items: flex-start; /* Alignement à gauche sur mobile */
+      margin-top: 10px;
+    }
+  
+    nav ul li {
+      margin: 5px 0;
+    }
+  
+    nav ul img {
+      margin-right: 0; /* Supprime la marge à droite sur mobile */
+      margin-bottom: 10px; /* Ajoute une marge en bas sur mobile */
+    }
+
+
+    /* Styles pour la page d'accueil */
+.accueil-page {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: #f0f0f0;
+  padding: 20px;
+  text-align: center;
+}
+
+.header-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.header-nav li {
+  display: inline;
+  margin: 0 15px;
+}
+
+.header-nav a {
+  text-decoration: none;
+  color: #333;
+}
+
+.header-content h1 {
+  margin-bottom: 10px;
+}
+
+main {
+  display: flex;
+  justify-content: space-around;
+  padding: 20px;
+}
+
+.content-block {
+  text-align: center;
+}
+
+.content-block img {
+  max-width: 100%;
+  height: auto;
+}
+
+.course-item {
+  background-color: #e0e0e0;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+footer {
+  background-color: #f0f0f0;
+  padding: 20px;
+  text-align: center;
+}
+
+.footer-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+}
+
+.footer-nav li {
+  display: inline;
+  margin: 0 15px;
+}
+
+footer a {
+  text-decoration: none;
+  color: #333;
+}
