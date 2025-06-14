@@ -432,34 +432,34 @@ if (examsResponse.data.success) {
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
     if (!file.type.startsWith('image/')) {
       alert("Veuillez sélectionner une image (JPEG/PNG).");
       return;
     }
-
+  
     const reader = new FileReader();
     reader.onload = () => setApercu(reader.result);
     reader.readAsDataURL(file);
-
+  
     try {
       setEnCoursUpload(true);
-
+  
       const formData = new FormData();
       formData.append('profile', file);
-
+  
       const token = localStorage.getItem('token');
       const response = await axios.post(
         'http://localhost:5000/api/etudiant/upload-profile',
         formData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization':` Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
           }
         }
       );
-
+  
       if (response.data.success) {
         setStudentData(prev => ({
           ...prev,
@@ -477,7 +477,6 @@ if (examsResponse.data.success) {
       setEnCoursUpload(false);
     }
   };
-
   if (loading) {
     return (
       <LoadingContainer>
@@ -721,55 +720,55 @@ if (examsResponse.data.success) {
             <Section>
               <SectionTitle>Informations personnelles</SectionTitle>
               <ProfileContainer>
-                <ProfilePhoto>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                  />
-                  {enCoursUpload ? (
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
-                      alignItems: 'center', 
-                      height: '100%',
-                      backgroundColor: '#f0f0f0'
-                    }}>
-                      <CircularProgress />
-                    </div>
-                  ) : studentData?.profile?.ProfileImage ? (
-                    <img
-                      src={`http://localhost:5000${studentData.profile.ProfileImage}`}
-                      alt="Photo de profil"
-                      onClick={() => fileInputRef.current.click()}
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover', 
-                        cursor: 'pointer' 
-                      }}
-                    />
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current.click()}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: '#f0f0f0',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <FaCamera size={40} color="#666" />
-                      <span style={{ marginTop: 10, color: '#666' }}>Ajouter une photo</span>
-                    </div>
-                  )}
-                </ProfilePhoto>
+              <ProfilePhoto>
+  <input
+    type="file"
+    ref={fileInputRef}
+    onChange={handleImageChange}
+    accept="image/*"
+    style={{ display: 'none' }}
+  />
+  {enCoursUpload ? (
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100%',
+      backgroundColor: '#f0f0f0'
+    }}>
+      <CircularProgress />
+    </div>
+  ) : studentData?.profile?.ProfileImage ? (
+    <img
+      src={`http://localhost:5000${studentData.profile.ProfileImage}`}
+      alt="Photo de profil"
+      onClick={() => fileInputRef.current.click()}
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        objectFit: 'cover', 
+        cursor: 'pointer' 
+      }}
+    />
+  ) : (
+    <div
+      onClick={() => fileInputRef.current.click()}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f0f0f0',
+        cursor: 'pointer'
+      }}
+    >
+      <FaCamera size={40} color="#666" />
+      <span style={{ marginTop: 10, color: '#666' }}>Ajouter une photo</span>
+    </div>
+  )}
+</ProfilePhoto>
 
                 <ProfileDetails>
                   <DetailItem>

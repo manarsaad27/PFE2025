@@ -11,8 +11,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
+
 const GestionMatieres = () => {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const [matieres, setMatieres] = useState([]);
   const [semestres, setSemestres] = useState([]);
   const [enseignants, setEnseignants] = useState([]);
@@ -31,17 +32,18 @@ const GestionMatieres = () => {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [selectedToDelete, setSelectedToDelete] = useState(null);
-
+  const [classes, setClasses] = useState([]);
   useEffect(() => {
     fetchMatieres();
     fetchSemestres();
     fetchEnseignants();
+    fetchClasses(); 
   }, []);
 
   const fetchMatieres = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/matieres");
-      setMatieres(res.data.data || res.data); // Gère les deux formats de réponse
+      setMatieres(res.data.data || res.data);
     } catch (error) {
       console.error("Erreur chargement:", error.response?.data || error.message);
       setSnackbar({
@@ -52,20 +54,31 @@ const GestionMatieres = () => {
     }
   };
 
-  const fetchSemestres = async () => {
-  try {
-    const res = await axios.get("http://localhost:5000/api/semestres");
-    setSemestres(res.data.data);
-  } catch (error) {
-    console.error("Erreur chargement semestres :", error);
-    setSnackbar({
-      open: true,
-      message: "Erreur lors du chargement des semestres",
-      severity: "error"
-    });
-  }
-};
 
+  const fetchClasses = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/classes");
+      setClasses(res.data.data || res.data);
+    } catch (error) {
+      console.error("Erreur chargement classes:", error);
+    }
+  };
+  
+
+  const fetchSemestres = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/semestres");
+      console.log("Données semestres:", res.data.data); // Vérifiez la structure ici
+      setSemestres(res.data.data || []);
+    } catch (error) {
+      console.error("Erreur chargement semestres :", error);
+      setSnackbar({
+        open: true,
+        message: "Erreur lors du chargement des semestres",
+        severity: "error"
+      });
+    }
+  };
 
   const fetchEnseignants = async () => {
     try {
@@ -74,6 +87,15 @@ const GestionMatieres = () => {
     } catch (error) {
       console.error("Erreur chargement enseignants :", error);
     }
+  };
+
+  const formatSemestre = (semestre) => {
+    if (!semestre) return "Non défini";
+    
+    // Trouver la classe correspondante
+    const classe = classes.find(c => c.id === semestre.classe_id);
+    
+    return `Semestre ${semestre.numero}${classe ? ` - ${classe.nom}` : ''}`;
   };
 
   const handleEdit = (matiere) => {
@@ -90,7 +112,6 @@ const GestionMatieres = () => {
 
   const handleSave = async () => {
     try {
-      // Validation côté client
       if (!form.nom || !form.semestre_id) {
         setSnackbar({
           open: true,
@@ -121,28 +142,21 @@ const GestionMatieres = () => {
           });
         }
       } else {
-        await axios.post("http://localhost:5000/api/matieres", data); // URL complète
+        await axios.post("http://localhost:5000/api/matieres", data);
         setSnackbar({ open: true, message: "Matière créée", severity: "success" });
       }
       
       fetchMatieres();
-    setOpen(false);
-  } catch (error) {
-    console.error("Erreur détaillée:", {
-      status: error.response?.status,
-      data: error.response?.data,
-      config: error.config
-    });
-
-    setSnackbar({
-      open: true,
-      message: error.response?.data?.message || "Erreur lors de l'opération",
-      severity: "error"
-    });
-  }
-};
-
-
+      setOpen(false);
+    } catch (error) {
+      console.error("Erreur détaillée:", error.response?.data || error.message);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Erreur lors de l'opération",
+        severity: "error"
+      });
+    }
+  };
 
   const handleConfirmDelete = (matiere) => {
     setSelectedToDelete(matiere);
@@ -162,25 +176,11 @@ const GestionMatieres = () => {
           message: response.data.message || 'Matière supprimée avec succès',
           severity: 'success'
         });
-      } else {
-        setSnackbar({
-          open: true,
-          message: response.data.message || 'Échec de la suppression',
-          severity: 'error'
-        });
       }
     } catch (error) {
-      console.error('Détails erreur:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
-  
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 
-               error.message || 
-               'Erreur lors de la suppression',
+        message: error.response?.data?.message || 'Erreur lors de la suppression',
         severity: 'error'
       });
     } finally {
@@ -206,12 +206,12 @@ const GestionMatieres = () => {
   return (
     <div style={{ padding: "2rem" }}>
       <Button 
-    startIcon={<ArrowBack />} 
-    onClick={() => navigate('/admin/dashboard')} 
-    sx={{ mb: 2 }}
-  >
-    Retour
-  </Button>
+        startIcon={<ArrowBack />} 
+        onClick={() => navigate('/admin/dashboard')} 
+        sx={{ mb: 2 }}
+      >
+        Retour
+      </Button>
       <h2>Gestion des Matières</h2>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -257,7 +257,14 @@ const GestionMatieres = () => {
                   <TableCell>{matiere.nom}</TableCell>
                   <TableCell>{matiere.credits || "-"}</TableCell>
                   <TableCell>{matiere.enseignant || "Non assigné"}</TableCell>
-                  <TableCell>{matiere.semestre || "-"}</TableCell>
+                  <TableCell>
+  {formatSemestre(
+    matiere.semestre_data || {
+      numero: matiere.semestre_numero,
+      classe_id: matiere.classe_id
+    }
+  )}
+</TableCell>
                   <TableCell>{matiere.classe || "-"}</TableCell>
                   <TableCell>
                     <IconButton color="primary" onClick={() => handleEdit(matiere)}>
@@ -312,11 +319,14 @@ const GestionMatieres = () => {
     label="Semestre"
     onChange={(e) => setForm({ ...form, semestre_id: e.target.value })}
   >
-    {semestres.map((semestre) => (
-      <MenuItem key={semestre.id} value={semestre.id}>
-        {`Semestre ${semestre.numero} - ${semestre.classe_nom} (${semestre.filiere_nom})`}
-      </MenuItem>
-    ))}
+    {semestres.map((semestre) => {
+      const classe = classes.find(c => c.id === semestre.classe_id);
+      return (
+        <MenuItem key={semestre.id} value={semestre.id}>
+          {`Semestre ${semestre.numero}${classe ? ` - ${classe.nom}` : ''}`}
+        </MenuItem>
+      );
+    })}
   </Select>
 </FormControl>
           <FormControl fullWidth>

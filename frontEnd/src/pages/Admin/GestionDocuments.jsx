@@ -1,514 +1,505 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+import { 
+  Box, Typography, Tabs, Tab, Paper, Grid, Card, CardContent, 
+  CardActions, Button, Chip, CircularProgress, Avatar, 
+  IconButton, useTheme, List, ListItem, ListItemAvatar, 
+  ListItemText, Divider, Badge
 } from '@mui/material';
-import { ArrowBack, GetApp, Delete, Edit, Add, CloudUpload } from '@mui/icons-material';
+import { 
+  Download as DownloadIcon, 
+  Event as EventIcon, 
+  Schedule as ScheduleIcon,
+  Assignment as AssignmentIcon,
+  ArrowBack,
+  NewReleases,
+  FilterList,
+  ViewList,
+  Apps
+} from '@mui/icons-material';
 import axios from 'axios';
-import moment from 'moment';
+import { useNavigate } from 'react-router-dom';
+import { format, parseISO, isToday, isTomorrow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-const DocumentsAdmin = () => {
+const GestionDocument = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentDoc, setCurrentDoc] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [formData, setFormData] = useState({
-    type: 'emploi',
-    titre: '',
-    description: '',
-    filiere_id: '',
-    classe_id: '',
-    semestre_id: '',
-    matiere_id: '',
-    date: '',
-    fichier: null
-  });
-  const [filieres, setFilieres] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [semestres, setSemestres] = useState([]);
-  const [matieres, setMatieres] = useState([]);
+  const [tabValue, setTabValue] = useState('all');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const API_URL = 'http://localhost:5000/api';
 
-  // Types de documents
-  const documentTypes = [
-    { value: 'emploi', label: 'Emploi du temps' },
-    { value: 'examen', label: 'Examen' },
-    { value: 'cours', label: 'Cours' },
-    { value: 'td', label: 'Travaux Dirigés' },
-    { value: 'tp', label: 'Travaux Pratiques' },
-    { value: 'evenement', label: 'Événement' },
-    { value: 'autre', label: 'Autre' }
-  ];
-
-  // Charger tous les documents
-  const fetchDocuments = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/documents/all');
-      setDocuments(response.data.data || []);
-    } catch (err) {
-      setError("Erreur lors du chargement des documents");
-      console.error("Erreur:", err);
-    } finally {
-      setLoading(false);
-    }
+  // Fonction de normalisation des données API
+  const normalizeApiData = (response) => {
+    if (!response) return [];
+    if (Array.isArray(response.data?.data)) return response.data.data;
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response)) return response;
+    return [];
   };
 
-  // Charger les données de référence
-  const fetchReferenceData = async () => {
-    try {
-      const [filieresRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/filieres')
-      ]);
-      setFilieres(filieresRes.data.data || []);
-    } catch (err) {
-      console.error("Erreur chargement données référence:", err);
-    }
-  };
-
-  // Charger les classes par filière
-  const fetchClasses = async (filiereId) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/filieres/${filiereId}/classes`);
-      setClasses(response.data.data || []);
-    } catch (err) {
-      console.error("Erreur chargement classes:", err);
-    }
-  };
-
-  // Charger les semestres par classe
-  const fetchSemestres = async (classeId) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/classes/${classeId}/semestres`);
-      setSemestres(response.data.data || []);
-    } catch (err) {
-      console.error("Erreur chargement semestres:", err);
-    }
-  };
-
-  // Charger les matières par semestre
-  const fetchMatieres = async (semestreId) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/semestres/${semestreId}/matieres`);
-      setMatieres(response.data.data || []);
-    } catch (err) {
-      console.error("Erreur chargement matières:", err);
-    }
+  // Fonction pour récupérer la date de diffusion
+  const getPublicationDate = (doc) => {
+    if (doc.published_at) return new Date(doc.published_at);
+    if (doc.createdAt) return new Date(doc.createdAt);
+    if (doc.date) return new Date(doc.date);
+    return new Date();
   };
 
   useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        setLoading(true);
+        const [emploisRes, examsRes, eventsRes] = await Promise.all([
+          axios.get(`${API_URL}/emplois`),
+          axios.get(`${API_URL}/examens`),
+          axios.get(`${API_URL}/evenements`)
+        ]);
+
+        // Normalisation des données
+        const normalizedEmplois = normalizeApiData(emploisRes).map(d => ({ 
+          ...d, 
+          type: 'emploi',
+          docType: 'Emploi du temps'
+        }));
+
+        const normalizedExams = normalizeApiData(examsRes).map(d => ({ 
+          ...d, 
+          type: 'examen',
+          docType: 'Examen'
+        }));
+
+        const normalizedEvents = normalizeApiData(eventsRes).map(d => ({ 
+          ...d, 
+          type: 'evenement',
+          docType: 'Événement'
+        }));
+
+        // Combiner et trier
+        const allDocuments = [
+          ...normalizedEmplois,
+          ...normalizedExams,
+          ...normalizedEvents
+        ].map(doc => ({
+          ...doc,
+          publicationDate: getPublicationDate(doc)
+        }))
+        .sort((a, b) => b.publicationDate - a.publicationDate);
+
+        setDocuments(allDocuments);
+      } catch (error) {
+        console.error("Erreur chargement documents:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchDocuments();
-    fetchReferenceData();
   }, []);
 
-  const handleOpenDialog = (doc = null) => {
-    if (doc) {
-      setCurrentDoc(doc);
-      setFormData({
-        type: doc.type,
-        titre: doc.titre || '',
-        description: doc.description || '',
-        filiere_id: doc.filiere_id || '',
-        classe_id: doc.classe_id || '',
-        semestre_id: doc.semestre_id || '',
-        matiere_id: doc.matiere_id || '',
-        date: doc.date || '',
-        fichier: null
-      });
-
-      // Charger les données hiérarchiques si nécessaire
-      if (doc.filiere_id) fetchClasses(doc.filiere_id);
-      if (doc.classe_id) fetchSemestres(doc.classe_id);
-      if (doc.semestre_id) fetchMatieres(doc.semestre_id);
-    } else {
-      setCurrentDoc(null);
-      setFormData({
-        type: 'emploi',
-        titre: '',
-        description: '',
-        filiere_id: '',
-        classe_id: '',
-        semestre_id: '',
-        matiere_id: '',
-        date: '',
-        fichier: null
-      });
-    }
-    setOpenDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-
-    // Gérer les dépendances entre les sélecteurs
-    if (name === 'filiere_id') {
-      fetchClasses(value);
-      setFormData(prev => ({ ...prev, classe_id: '', semestre_id: '', matiere_id: '' }));
-    } else if (name === 'classe_id') {
-      fetchSemestres(value);
-      setFormData(prev => ({ ...prev, semestre_id: '', matiere_id: '' }));
-    } else if (name === 'semestre_id') {
-      fetchMatieres(value);
-      setFormData(prev => ({ ...prev, matiere_id: '' }));
-    }
-  };
-
-  const handleFileChange = (e) => {
-    setFormData({ ...formData, fichier: e.target.files[0] });
-  };
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      
-      const formDataToSend = new FormData();
-      formDataToSend.append('type', formData.type);
-      formDataToSend.append('titre', formData.titre);
-      formDataToSend.append('description', formData.description);
-      if (formData.filiere_id) formDataToSend.append('filiere_id', formData.filiere_id);
-      if (formData.classe_id) formDataToSend.append('classe_id', formData.classe_id);
-      if (formData.semestre_id) formDataToSend.append('semestre_id', formData.semestre_id);
-      if (formData.matiere_id) formDataToSend.append('matiere_id', formData.matiere_id);
-      if (formData.date) formDataToSend.append('date', formData.date);
-      if (formData.fichier) formDataToSend.append('fichier', formData.fichier);
-
-      if (currentDoc) {
-        await axios.put(`http://localhost:5000/api/documents/${currentDoc.id}`, formDataToSend, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        setSuccess('Document mis à jour avec succès');
-      } else {
-        await axios.post('http://localhost:5000/api/documents', formDataToSend, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        setSuccess('Document ajouté avec succès');
-      }
-
-      fetchDocuments();
-      handleCloseDialog();
-    } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'opération");
-      console.error("Erreur:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/documents/${id}`);
-      setDocuments(documents.filter(doc => doc.id !== id));
-      setSuccess('Document supprimé avec succès');
-    } catch (err) {
-      setError("Erreur lors de la suppression");
-      console.error("Erreur:", err);
-    }
-  };
-
-  const handleDownload = (id, filename) => {
-    window.open(`http://localhost:5000/api/documents/${id}/download`, '_blank');
-  };
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'emploi': return 'primary';
-      case 'examen': return 'error';
-      case 'cours': return 'success';
-      case 'td': return 'warning';
-      case 'tp': return 'info';
-      case 'evenement': return 'secondary';
-      default: return 'default';
-    }
-  };
-
-  const getNom = (id, collection) => {
-    const item = collection.find(item => item.id == id);
-    return item ? item.nom : '-';
-  };
-
-  const filteredDocuments = filter === 'all' 
+  // Filtrer les documents
+  const filteredDocuments = tabValue === 'all' 
     ? documents 
-    : documents.filter(doc => doc.type === filter);
+    : documents.filter(doc => doc.type === tabValue);
 
-  return (
-    <Box sx={{ p: 3 }}>
-      <Button startIcon={<ArrowBack />} onClick={() => navigate('/admin/dashboard')} sx={{ mb: 2 }}>
-        Retour
-      </Button>
+  const formatDate = (date) => {
+    if (!date) return null;
+    try {
+      const dateObj = typeof date === 'string' ? parseISO(date) : date;
+      
+      if (isToday(dateObj)) {
+        return `Aujourd'hui à ${format(dateObj, 'HH:mm', { locale: fr })}`;
+      } else if (isTomorrow(dateObj)) {
+        return `Demain à ${format(dateObj, 'HH:mm', { locale: fr })}`;
+      }
+      
+      return format(dateObj, "dd MMM yyyy 'à' HH:mm", { locale: fr });
+    } catch (e) {
+      return date.toString();
+    }
+  };
 
-      <Typography variant="h4" gutterBottom>
-        Gestion des Documents
-      </Typography>
+  const isNewDocument = (pubDate) => {
+    if (!pubDate) return false;
+    try {
+      const publicationDate = typeof pubDate === 'string' ? new Date(pubDate) : pubDate;
+      const now = new Date();
+      const diffHours = Math.abs(now - publicationDate) / 36e5;
+      return diffHours < 24;
+    } catch (e) {
+      return false;
+    }
+  };
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+  const getIcon = (type) => {
+    switch(type) {
+      case 'emploi': return <ScheduleIcon />;
+      case 'examen': return <AssignmentIcon />;
+      case 'evenement': return <EventIcon />;
+      default: return <EventIcon />;
+    }
+  };
 
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
-          {success}
-        </Alert>
-      )}
+  const getColor = (type) => {
+    switch(type) {
+      case 'emploi': return theme.palette.primary.main;
+      case 'examen': return theme.palette.secondary.main;
+      case 'evenement': return theme.palette.success.main;
+      default: return theme.palette.grey[500];
+    }
+  };
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel>Filtrer par type</InputLabel>
-          <Select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            label="Filtrer par type"
-          >
-            <MenuItem value="all">Tous les types</MenuItem>
-            {documentTypes.map(type => (
-              <MenuItem key={type.value} value={type.value}>
-                {type.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+  const getBgColor = (type) => {
+    switch(type) {
+      case 'emploi': return theme.palette.primary.light;
+      case 'examen': return theme.palette.secondary.light;
+      case 'evenement': return theme.palette.success.light;
+      default: return theme.palette.grey[200];
+    }
+  };
 
-        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
-          Ajouter un document
-        </Button>
-      </Box>
+  const handleDownload = (id, type) => {
+    if (type === 'emploi') {
+      window.open(`${API_URL}/emplois/${id}/download`, "_blank");
+    }
+  };
 
-      {loading ? (
-        <CircularProgress sx={{ display: 'block', mx: 'auto', my: 4 }} />
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Type</TableCell>
-                <TableCell>Titre</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Filière</TableCell>
-                <TableCell>Classe</TableCell>
-                <TableCell>Semestre</TableCell>
-                <TableCell>Matière</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredDocuments.map((doc) => (
-                <TableRow key={doc.id}>
-                  <TableCell>
-                    <Chip 
-                      label={documentTypes.find(t => t.value === doc.type)?.label || doc.type}
-                      color={getTypeColor(doc.type)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{doc.titre}</TableCell>
-                  <TableCell>{doc.description || '-'}</TableCell>
-                  <TableCell>{getNom(doc.filiere_id, filieres)}</TableCell>
-                  <TableCell>{getNom(doc.classe_id, classes)}</TableCell>
-                  <TableCell>
-                    {doc.semestre_id ? `S${semestres.find(s => s.id == doc.semestre_id)?.numero || '?'}` : '-'}
-                  </TableCell>
-                  <TableCell>{getNom(doc.matiere_id, matieres)}</TableCell>
-                  <TableCell>{doc.date ? moment(doc.date).format('DD/MM/YYYY') : '-'}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => handleDownload(doc.id, doc.fichier_nom)}>
-                      <GetApp color="primary" />
-                    </IconButton>
-                    <IconButton onClick={() => handleOpenDialog(doc)}>
-                      <Edit color="primary" />
-                    </IconButton>
-                    <IconButton onClick={() => handleDelete(doc.id)}>
-                      <Delete color="error" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+  // Fonction pour obtenir le titre du document
+  const getDocumentTitle = (doc) => {
+    switch(doc.type) {
+      case 'emploi':
+        return doc.type_emploi === 'etudiant' 
+          ? `Emploi - ${doc.filiere_nom || ''} ${doc.classe_nom || ''} `
+          : `Emploi - ${doc.enseignant_nom || ''}`;
+      case 'examen':
+        return `${doc.matiere_nom} - ${doc.type}`;
+      case 'evenement':
+        return doc.titre;
+      default:
+        return 'Document sans titre';
+    }
+  };
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {currentDoc ? 'Modifier un document' : 'Ajouter un nouveau document'}
-        </DialogTitle>
-        <DialogContent>
-          <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Type de document</InputLabel>
-              <Select
-                label="Type de document"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-              >
-                {documentTypes.map(type => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              fullWidth
-              label="Titre"
-              name="titre"
-              value={formData.titre}
-              onChange={handleInputChange}
-              required
+  // Affichage en mode grille
+  const renderGridItem = (doc) => (
+    <Grid item xs={12} sm={6} md={4} key={`${doc.type}-${doc.id}`}>
+      <Card sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        borderRadius: 2,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+        transition: 'transform 0.3s, box-shadow 0.3s',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 6px 24px rgba(0,0,0,0.1)'
+        }
+      }}>
+        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            mb: 2,
+            justifyContent: 'space-between'
+          }}>
+            <Chip
+              label={doc.docType}
+              size="small"
+              sx={{ 
+                bgcolor: getBgColor(doc.type),
+                color: getColor(doc.type),
+                fontWeight: 'bold'
+              }}
             />
+            
+            {isNewDocument(doc.publicationDate) && (
+              <Chip 
+                icon={<NewReleases fontSize="small" />}
+                label="Nouveau"
+                color="error"
+                size="small"
+                sx={{ fontWeight: 'bold' }}
+              />
+            )}
+          </Box>
 
-            <TextField
-              fullWidth
-              label="Description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              multiline
-              rows={3}
-            />
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            mb: 2,
+            bgcolor: getBgColor(doc.type),
+            borderRadius: '50%',
+            width: 56,
+            height: 56,
+            justifyContent: 'center',
+            color: getColor(doc.type)
+          }}>
+            {getIcon(doc.type)}
+          </Box>
 
-            <FormControl fullWidth>
-              <InputLabel>Filière</InputLabel>
-              <Select
-                label="Filière"
-                name="filiere_id"
-                value={formData.filiere_id}
-                onChange={handleInputChange}
-              >
-                <MenuItem value="">Sélectionnez une filière</MenuItem>
-                {filieres.map(filiere => (
-                  <MenuItem key={filiere.id} value={filiere.id}>
-                    {filiere.nom}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+            {getDocumentTitle(doc)}
+          </Typography>
 
-            <FormControl fullWidth disabled={!formData.filiere_id}>
-              <InputLabel>Classe</InputLabel>
-              <Select
-                label="Classe"
-                name="classe_id"
-                value={formData.classe_id}
-                onChange={handleInputChange}
-              >
-                <MenuItem value="">Sélectionnez une classe</MenuItem>
-                {classes.map(classe => (
-                  <MenuItem key={classe.id} value={classe.id}>
-                    {classe.nom}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth disabled={!formData.classe_id}>
-              <InputLabel>Semestre</InputLabel>
-              <Select
-                label="Semestre"
-                name="semestre_id"
-                value={formData.semestre_id}
-                onChange={handleInputChange}
-              >
-                <MenuItem value="">Sélectionnez un semestre</MenuItem>
-                {semestres.map(semestre => (
-                  <MenuItem key={semestre.id} value={semestre.id}>
-                    Semestre {semestre.numero}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth disabled={!formData.semestre_id}>
-              <InputLabel>Matière</InputLabel>
-              <Select
-                label="Matière"
-                name="matiere_id"
-                value={formData.matiere_id}
-                onChange={handleInputChange}
-              >
-                <MenuItem value="">Sélectionnez une matière (optionnel)</MenuItem>
-                {matieres.map(matiere => (
-                  <MenuItem key={matiere.id} value={matiere.id}>
-                    {matiere.nom}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              fullWidth
-              label="Date (si applicable)"
-              name="date"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={formData.date}
-              onChange={handleInputChange}
-            />
-
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<CloudUpload />}
-              fullWidth
-            >
-              {formData.fichier?.name || "Téléverser le fichier"}
-              <input type="file" hidden onChange={handleFileChange} />
-            </Button>
-
-            {currentDoc?.fichier_nom && !formData.fichier && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Fichier actuel: {currentDoc.fichier_nom}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: 1,
+            mt: 2,
+            p: 2,
+            borderRadius: 1,
+            bgcolor: theme.palette.background.default
+          }}>
+            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+              <ScheduleIcon sx={{ fontSize: 16, mr: 1, color: theme.palette.text.secondary }} />
+              {formatDate(doc.publicationDate)}
+            </Typography>
+            
+            {doc.date && doc.type !== 'emploi' && (
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                <EventIcon sx={{ fontSize: 16, mr: 1, color: theme.palette.text.secondary }} />
+                {formatDate(doc.date)}
               </Typography>
             )}
           </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Annuler</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSubmit}
-            disabled={loading || !formData.titre || !formData.type}
+        </CardContent>
+        
+        <CardActions sx={{ 
+          justifyContent: 'space-between', 
+          borderTop: `1px solid ${theme.palette.divider}`,
+          p: 2
+        }}>
+          {doc.type === 'emploi' && (
+            <Button
+              startIcon={<DownloadIcon />}
+              onClick={() => handleDownload(doc.id, doc.type)}
+              variant="text"
+              size="small"
+              sx={{ color: getColor(doc.type) }}
+            >
+              Télécharger
+            </Button>
+          )}
+          
+          <Chip
+            label={
+              doc.type === 'emploi' 
+                ? (doc.type_emploi === 'etudiant' ? 'Étudiants' : 'Enseignant')
+                : doc.docType
+            }
+            size="small"
+            variant="outlined"
+            sx={{ borderColor: getColor(doc.type), color: getColor(doc.type) }}
+          />
+        </CardActions>
+      </Card>
+    </Grid>
+  );
+
+  // Affichage en mode liste
+  const renderListItem = (doc) => (
+    <ListItem 
+      key={`${doc.type}-${doc.id}`} 
+      sx={{ 
+        p: 3, 
+        mb: 2, 
+        borderRadius: 2,
+        bgcolor: 'background.paper',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+        transition: 'transform 0.3s',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.08)'
+        }
+      }}
+    >
+      <ListItemAvatar>
+        <Avatar sx={{ 
+          bgcolor: getBgColor(doc.type),
+          color: getColor(doc.type),
+          width: 48, 
+          height: 48 
+        }}>
+          {getIcon(doc.type)}
+        </Avatar>
+      </ListItemAvatar>
+      <ListItemText
+        primary={
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mr: 2 }}>
+              {getDocumentTitle(doc)}
+            </Typography>
+            <Chip
+              label={doc.docType}
+              size="small"
+              sx={{ 
+                bgcolor: getBgColor(doc.type),
+                color: getColor(doc.type),
+                fontWeight: 'bold'
+              }}
+            />
+            {isNewDocument(doc.publicationDate) && (
+              <Chip 
+                label="Nouveau"
+                color="error"
+                size="small"
+                sx={{ ml: 1, fontWeight: 'bold' }}
+              />
+            )}
+          </Box>
+        }
+        secondary={
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Publié le {formatDate(doc.publicationDate)}
+            </Typography>
+            {doc.date && doc.type !== 'emploi' && (
+              <Typography variant="body2" color="text.secondary">
+                Date: {formatDate(doc.date)}
+              </Typography>
+            )}
+          </Box>
+        }
+      />
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        {doc.type === 'emploi' && (
+          <IconButton 
+            onClick={() => handleDownload(doc.id, doc.type)}
+            sx={{ color: getColor(doc.type) }}
           >
-            {loading ? <CircularProgress size={24} /> : currentDoc ? 'Mettre à jour' : 'Ajouter'}
+            <DownloadIcon />
+          </IconButton>
+        )}
+      </Box>
+    </ListItem>
+  );
+
+  return (
+    <Box sx={{ p: 3, bgcolor: theme.palette.background.default, minHeight: '100vh' }}>
+      <Button 
+        startIcon={<ArrowBack />} 
+        onClick={() => navigate('/admin/dashboard')} 
+        sx={{ mb: 3, color: theme.palette.text.primary }}
+      >
+        Retour
+      </Button>
+
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 4
+      }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
+            Documents diffusés
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Tous vos documents en un seul endroit
+          </Typography>
+        </Box>
+        
+        <Box>
+          <IconButton onClick={() => setViewMode('list')} color={viewMode === 'list' ? 'primary' : 'default'}>
+            <ViewList />
+          </IconButton>
+          <IconButton onClick={() => setViewMode('grid')} color={viewMode === 'grid' ? 'primary' : 'default'}>
+            <Apps />
+          </IconButton>
+        </Box>
+      </Box>
+
+      <Paper sx={{ 
+        mb: 4, 
+        borderRadius: 2, 
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+        bgcolor: theme.palette.background.paper
+      }}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(e, newValue) => setTabValue(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontWeight: 500,
+              minHeight: 48
+            },
+            '& .Mui-selected': {
+              fontWeight: 600,
+              color: `${theme.palette.primary.main} !important`
+            }
+          }}
+        >
+          <Tab label="Tous les documents" value="all" icon={<FilterList />} iconPosition="start" />
+          <Tab label="Emplois du temps" value="emploi" icon={<ScheduleIcon />} iconPosition="start" />
+          <Tab label="Examens" value="examen" icon={<AssignmentIcon />} iconPosition="start" />
+          <Tab label="Événements" value="evenement" icon={<EventIcon />} iconPosition="start" />
+        </Tabs>
+      </Paper>
+
+      {loading ? (
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '50vh'
+        }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {viewMode === 'grid' ? (
+            <Grid container spacing={3}>
+              {filteredDocuments.map(renderGridItem)}
+            </Grid>
+          ) : (
+            <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+              {filteredDocuments.map(renderListItem)}
+            </List>
+          )}
+        </>
+      )}
+
+      {!loading && filteredDocuments.length === 0 && (
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          py: 10,
+          textAlign: 'center',
+          bgcolor: theme.palette.background.paper,
+          borderRadius: 2,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          mt: 2
+        }}>
+          <EventIcon sx={{ 
+            fontSize: 80, 
+            color: theme.palette.text.disabled, 
+            mb: 2 
+          }} />
+          <Typography variant="h5" color="text.secondary" sx={{ mb: 1 }}>
+            Aucun document disponible
+          </Typography>
+          <Typography color="text.secondary">
+            {tabValue === 'all' 
+              ? "Aucun document n'a été trouvé dans le système" 
+              :` Aucun ${tabValue === 'emploi' ? 'emploi du temps' : tabValue} n'a été trouvé`}
+          </Typography>
+          <Button 
+            variant="outlined" 
+            sx={{ mt: 3, borderRadius: 2 }}
+            onClick={() => setTabValue('all')}
+          >
+            Voir tous les documents
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      )}
     </Box>
   );
 };
 
-export default DocumentsAdmin;
+export default GestionDocument;

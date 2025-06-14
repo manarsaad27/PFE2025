@@ -1116,7 +1116,8 @@ app.get("/api/etudiant/:cin", async (req, res) => {
         e.Filière AS filiere_id,
         e.Classe AS classe_id,
         f.nom AS filiere_nom,
-        c.nom AS classe_nom
+        c.nom AS classe_nom,
+        e.ProfileImage
       FROM etudiant e
       LEFT JOIN filieres f ON e.Filière = f.id
       LEFT JOIN classes c ON e.Classe = c.id
@@ -2192,16 +2193,19 @@ router.get('/classes', async (req, res) => {$
     res.status(500).json({ message: err.message });
   }
 });
-// GET /api/semestres
+// Dans votre backend (Node.js/Express)
 router.get('/semestres', async (req, res) => {
   try {
-    const [semestres] = await connection.query('SELECT * FROM semestres');
-    res.json(semestres);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const semestres = await db.query(`
+      SELECT s.id, s.numero, c.nom as classe_nom 
+      FROM semestres s
+      JOIN classes c ON s.classe_id = c.id
+    `);
+    res.json({ data: semestres });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
-
 
 
 router.get('/filieres/:filiereId/classes', async (req, res) => {
@@ -2978,7 +2982,12 @@ app.put('/api/examens/:id/publish', async (req, res) => {
         createdAt
       ]);
     }
-
+    io.to("enseignants").emit("newNotification", {
+      message: "Un nouveau cours a été publié.",
+      audience: "enseignants",
+      created_at: new Date(),
+    });
+    
     // Insertion des notifications si besoin
     if (notifications.length > 0) {
       await pool.query(
@@ -2987,6 +2996,17 @@ app.put('/api/examens/:id/publish', async (req, res) => {
         [notifications]
       );
     }
+if (updates.diffusion_enseignants) {
+  io.emit('notification', {
+    audience: 'enseignants',
+    type: 'examen',
+    message: `Nouvel examen publié pour les enseignants le ${examen.date} à ${examen.heure_debut}`,
+    reference_id: id,
+    created_at: createdAt
+  });
+}
+
+
 
     res.json({ success: true, message: `Examen diffusé avec succès aux ${cible}` });
 
@@ -3720,6 +3740,170 @@ app.get('/api/agents/profile', authenticateAgent(), async (req, res) => {
   }
 });
 
+
+
+
+
+
+// Routes pour les statistiques
+app.get('/api/stats/users', async (req, res) => {
+  try {
+    // Comptage des utilisateurs
+    const [etudiants] = await pool.query('SELECT COUNT(*) as count FROM etudiant');
+    const [enseignants] = await pool.query('SELECT COUNT(*) as count FROM enseignants');
+    const [agents] = await pool.query('SELECT COUNT(*) as count FROM agents');
+    
+    res.json({
+      etudiants: etudiants[0].count,
+      enseignants: enseignants[0].count,
+      agents: agents[0].count,
+      total: etudiants[0].count + enseignants[0].count + agents[0].count
+    });
+  } catch (err) {
+    console.error("Erreur stats utilisateurs:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get('/api/stats/formations', async (req, res) => {
+  try {
+    const [filieres] = await pool.query('SELECT COUNT(*) as count FROM filieres');
+    const [classes] = await pool.query('SELECT COUNT(*) as count FROM classes');
+    const [matieres] = await pool.query('SELECT COUNT(*) as count FROM matieres');
+    
+    // Détails par filière
+    const [details] = await pool.query(`
+      SELECT f.id, f.nom, 
+             COUNT(DISTINCT c.id) as classes,
+             COUNT(DISTINCT m.id) as matieres
+      FROM filieres f
+      LEFT JOIN classes c ON f.id = c.filiere_id
+      LEFT JOIN semestres s ON c.id = s.classe_id
+      LEFT JOIN matieres m ON s.id = m.semestre_id
+      GROUP BY f.id
+    `);
+    
+    res.json({
+      filieres: filieres[0].count,
+      classes: classes[0].count,
+      matieres: matieres[0].count,
+      details
+    });
+  } catch (err) {
+    console.error("Erreur stats formations:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get('/api/stats/documents', async (req, res) => {
+  try {
+    const [total] = await pool.query('SELECT COUNT(*) as count FROM documents');
+    
+    // Par type de fichier
+    const [types] = await pool.query(`
+      SELECT 
+        CASE 
+          WHEN file_type LIKE 'application/pdf' THEN 'PDF'
+          WHEN file_type LIKE 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' THEN 'Word'
+          ELSE 'Autre'
+        END as type,
+        COUNT(*) as count
+      FROM documents
+      GROUP BY type
+    `);
+    
+    res.json({
+      total: total[0].count,
+      types
+    });
+  } catch (err) {
+    console.error("Erreur stats documents:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get('/api/stats/emplois', async (req, res) => {
+  try {
+    const [total] = await pool.query('SELECT COUNT(*) as count FROM emplois_du_temps');
+    const [etudiants] = await pool.query('SELECT COUNT(*) as count FROM emplois_du_temps WHERE type = "etudiant"');
+    const [enseignants] = await pool.query('SELECT COUNT(*) as count FROM emplois_du_temps WHERE type = "enseignant"');
+    const [nonPublies] = await pool.query('SELECT COUNT(*) as count FROM emplois_du_temps WHERE published = 0');
+    
+    res.json({
+      total: total[0].count,
+      etudiants: etudiants[0].count,
+      enseignants: enseignants[0].count,
+      nonPublies: nonPublies[0].count
+    });
+  } catch (err) {
+    console.error("Erreur stats emplois:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get('/api/stats/examens', async (req, res) => {
+  try {
+    const [total] = await pool.query('SELECT COUNT(*) as count FROM examens');
+    
+    // Par type d'examen
+    const [types] = await pool.query(`
+      SELECT type as name, COUNT(*) as value 
+      FROM examens 
+      GROUP BY type
+    `);
+    
+    res.json({
+      total: total[0].count,
+      types
+    });
+  } catch (err) {
+    console.error("Erreur stats examens:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get('/api/stats/evenements', async (req, res) => {
+  try {
+    const [total] = await pool.query('SELECT COUNT(*) as count FROM evenements');
+    
+    // Prochains événements (dans les 30 prochains jours)
+    const [prochains] = await pool.query(`
+      SELECT * FROM evenements 
+      WHERE date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY)
+      ORDER BY date ASC
+      LIMIT 4
+    `);
+    
+    res.json({
+      total: total[0].count,
+      prochains
+    });
+  } catch (err) {
+    console.error("Erreur stats événements:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get('/api/stats/reclamations', async (req, res) => {
+  try {
+    const [total] = await pool.query('SELECT COUNT(*) as count FROM reclamations');
+    
+    // Par statut
+    const [status] = await pool.query(`
+      SELECT status as name, COUNT(*) as value 
+      FROM reclamations 
+      GROUP BY status
+    `);
+    
+    res.json({
+      total: total[0].count,
+      status
+    });
+  } catch (err) {
+    console.error("Erreur stats réclamations:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 
 
 

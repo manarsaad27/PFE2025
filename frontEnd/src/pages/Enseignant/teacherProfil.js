@@ -37,15 +37,22 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  useMediaQuery,
+  alpha
 
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Notifications as NotificationsIcon, Close as CloseIcon } from '@mui/icons-material';
 import io from 'socket.io-client';
-
+import { useTheme } from "@mui/material/styles";
 const socket = io("http://localhost:5000");
 const TeacherProfil = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [hasNew, setHasNew] = useState(false);
+  const anchorRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const [hasNewNotification, setHasNewNotification] = useState(false);
@@ -69,33 +76,56 @@ const TeacherProfil = () => {
 
 
   // Charger les notifications
-const loadNotifications = async () => {
-  try {
-    const { data } = await axios.get(`${API_URL}/api/notifications`, {
-      params: { audience: 'enseignants' },
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (data.success) {
-      // Adaptez la structure des données si nécessaire
-      const formattedNotifications = data.notifications.map(notif => ({
-        id: notif.id,
-        title: notif.title || "Notification",
-        message: notif.message,
-        read_status: notif.read_status || false,
-        created_at: notif.created_at
-      }));
-      
-      setNotifications(formattedNotifications);
-      setUnreadCount(formattedNotifications.filter(n => !n.read_status).length);
-    } else {
-      setError(data.message);
+  const loadNotifications = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/notifications?audience=enseignants");
+      if (data.success) {
+        setNotifications(data.notifications);
+        const unread = data.notifications.filter(n => !n.read_status).length;
+        setUnreadCount(unread);
+        setHasNew(unread > 0);
+      }
+    } catch (error) {
+      console.error("Erreur chargement notifications :", error);
     }
-  } catch (error) {
-    console.error("Erreur lors du chargement des notifications:", error);
-    setError("Erreur lors de la récupération des notifications");
-  }
-};
+  };
+
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    socket.on("newNotification", notif => {
+      if (notif.audience === "enseignants" || notif.audience === "tous") {
+        setNotifications(prev => [{ 
+          id: notif.reference_id + "-" + Date.now(),
+          message: notif.message,
+          read_status: false,
+          created_at: notif.created_at
+        }, ...prev]);
+        setUnreadCount(prev => prev + 1);
+        setHasNew(true);
+      }
+    });
+
+    return () => socket.off("newNotification");
+  }, []);
+  useEffect(() => {
+    socket.emit("registerAsEnseignant"); // Très important pour rejoindre la room
+  }, []);
+  
+  const togglePopover = () => {
+    const opening = !open;
+    setOpen(opening);
+    if (opening) {
+      setUnreadCount(0);
+      setHasNew(false);
+    }
+  };
+
+  const handleClose = () => setOpen(false);
   // Gérer l'ouverture/fermeture du popover
   const handleToggleNotifications = () => {
     setOpen(!open);
@@ -423,116 +453,74 @@ const loadNotifications = async () => {
         <div style={{ flexGrow: 1 }} />
 
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <IconButton
-            ref={anchorEl}
-            onClick={handleToggleNotifications}
-            style={{
-              position: 'relative',
-              color: '#0056b3',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 86, 179, 0.1)'
-              }
-            }}
-          >
-            <Badge
-              badgeContent={unreadCount}
-              color="error"
-              invisible={unreadCount === 0}
-            >
-              <NotificationsIcon />
-            </Badge>
+        <IconButton
+        ref={anchorRef}
+        onClick={togglePopover}
+        sx={{
+          color: "text.secondary",
+          "&:hover": {
+            backgroundColor: alpha(theme.palette.primary.main, 0.1)
+          }
+        }}
+      >
+        <Badge badgeContent={hasNew ? unreadCount : 0} color="error" invisible={!hasNew || unreadCount === 0}>
+          <NotificationsIcon />
+        </Badge>
+      </IconButton>
+
+      <Popover
+        open={open}
+        anchorEl={anchorRef.current}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        PaperProps={{
+          sx: {
+            width: isMobile ? "90vw" : 400,
+            maxHeight: "70vh",
+            overflow: "auto",
+            p: 2,
+            borderRadius: 2,
+            boxShadow: theme.shadows[10]
+          }
+        }}
+      >
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+          <Typography variant="h6">Notifications Cours</Typography>
+          <IconButton onClick={handleClose} size="small">
+            <CloseIcon fontSize="small" />
           </IconButton>
-
-          <Popover
-            open={open}
-            anchorEl={anchorEl.current}
-            onClose={handleCloseNotifications}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            PaperProps={{
-              style: {
-                width: 400,
-                maxHeight: '70vh',
-                overflow: 'auto',
-                padding: '1rem',
-                borderRadius: '10px',
-                boxShadow: '0 4px 20px 0 rgba(0,0,0,0.15)'
-              }
-            }}
-          >
-            <ClickAwayListener onClickAway={handleCloseNotifications}>
-              <Box>
-                <Box style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '1rem'
-                }}>
-                  <Typography variant="h6" style={{ color: '#0056b3' }}>
-                    Notifications
-                  </Typography>
-                  <IconButton onClick={handleCloseNotifications} size="small">
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-
-                <Divider style={{ marginBottom: '1rem' }} />
-
-                {notifications.length === 0 ? (
-                  <Typography variant="body2" style={{ color: '#666', textAlign: 'center', padding: '1rem' }}>
-                    Aucune notification pour le moment
-                  </Typography>
-                ) : (
-                  <List dense>
-                    {notifications.map((notification, index) => (
-                      <React.Fragment key={notification.id || index}>
-                        <ListItem
-                          style={{
-                            backgroundColor: notification.read_status ? 'inherit' : 'rgba(0, 86, 179, 0.05)',
-                            borderRadius: '8px',
-                            marginBottom: '0.5rem',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 86, 179, 0.1)'
-                            }
-                          }}
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <ListItemText
-                            primary={
-                              <Typography variant="subtitle2" style={{ color: '#0056b3' }}>
-                                {notification.title || "Notification"}
-                              </Typography>
-                            }
-                            secondary={
-                              <Typography variant="body2" style={{ color: '#666' }}>
-                                {notification.message}
-                              </Typography>
-                            }
-                            secondaryTypographyProps={{
-                              style: {
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }
-                            }}
-                          />
-                        </ListItem>
-                        {index < notifications.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                )}
-              </Box>
-            </ClickAwayListener>
-          </Popover>
-
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+        {notifications.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" align="center">
+            Aucune notification
+          </Typography>
+        ) : (
+          <List dense>
+            {notifications.map((notif, i) => (
+              <React.Fragment key={notif.id}>
+                <ListItem
+                  sx={{
+                    backgroundColor: notif.read_status ? "inherit" : alpha(theme.palette.primary.main, 0.05),
+                    borderRadius: 1,
+                    mb: 1,
+                    "&:hover": {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1)
+                    }
+                  }}
+                >
+                  <ListItemText
+                    primary={<Typography variant="subtitle2">Système</Typography>}
+                    secondary={<Typography variant="body2">{notif.message}</Typography>}
+                  />
+                </ListItem>
+                {i < notifications.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
+          </List>
+        )}
+      </Popover>
 
 
 
