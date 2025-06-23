@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   FaFacebook,
   FaMapMarkerAlt,
@@ -9,9 +10,16 @@ import {
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 import axios from 'axios';
+
 export default function Footer() {
-  const [formData, setFormData] = useState({ email: "", problem: "" });
+  const location = useLocation();
+  const [formData, setFormData] = useState({ email: "", problem: "", userType: 'autre' });
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // ✅ Tester après avoir déclaré les hooks
+  if (location.pathname.startsWith("/agent")) {
+    return null;
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,17 +28,13 @@ export default function Footer() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/reclamations',
-        {
-          email: formData.email,
-          message: formData.problem,
-          userType: formData.userType
-        }
-      );
-  
+      const response = await axios.post('http://localhost:5000/api/reclamations', {
+        email: formData.email,
+        message: formData.problem,
+        userType: formData.userType
+      });
+
       if (response.data.success) {
         setIsSubmitted(true);
         setFormData({ email: '', problem: '', userType: 'autre' });
@@ -40,19 +44,20 @@ export default function Footer() {
       }
     } catch (error) {
       console.error("Erreur détaillée:", error);
-      
+
       let errorMessage = "Une erreur est survenue lors de l'envoi du problème";
-      
+
       if (error.response) {
-        errorMessage = error.response.data.message || 
-                    ` Erreur ${error.response.status}: ${error.response.statusText}`;
+        errorMessage = error.response.data.message ||
+          `Erreur ${error.response.status}: ${error.response.statusText}`;
       } else if (error.request) {
         errorMessage = "Pas de réponse du serveur - vérifiez votre connexion";
       }
-      
+
       alert(errorMessage);
     }
   };
+
 
   return (
     <footer
@@ -63,7 +68,6 @@ export default function Footer() {
         fontFamily: "'Segoe UI', Roboto, sans-serif",
       }}
     >
-      {/* Top border */}
       <div
         style={{
           height: "2px",
@@ -73,7 +77,6 @@ export default function Footer() {
         }}
       />
 
-      {/* Content */}
       <div
         style={{
           display: "flex",
@@ -227,7 +230,6 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Footer bas */}
       <div
         style={{
           textAlign: "center",

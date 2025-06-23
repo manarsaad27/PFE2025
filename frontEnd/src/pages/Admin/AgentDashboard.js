@@ -182,41 +182,7 @@ const AgentSidebar = ({ agent }) => {
         </Box>
       </Card>
 
-      {/* Stats Section */}
-      <Box sx={{ 
-        width: '100%',
-        bgcolor: 'background.default',
-        borderRadius: '12px',
-        p: 2,
-        textAlign: 'center'
-      }}>
-        <Typography variant="subtitle2" sx={{ 
-          color: 'text.secondary',
-          mb: 1.5
-        }}>
-          Activité du mois
-        </Typography>
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-around' }}>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-              24
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Actions
-            </Typography>
-          </Box>
-          
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-              5
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Tâches
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+      
     </Box>
   );
 };
@@ -263,35 +229,29 @@ const AgentDashboard = () => {
       title: "Gestion des Utilisateurs",
       description: "Gérez les comptes étudiants, enseignants et administrateurs",
       icon: <People fontSize="large" />,
-      path: "/admin/utilisateurs",
+      path: "/agent/utilisateurs",
       color: deepPurple[500]
     },
-    {
-      title: "Gestion des Cours",
-      description: "Ajoutez et modifiez les cours, TD, TP et ressources",
-      icon: <School fontSize="large" />,
-      path: "/admin/cours",
-      color: indigo[500]
-    },
+    
     {
       title: "Documents",
       description: "Gérez tous les documents partagés sur la plateforme",
       icon: <Description fontSize="large" />,
-      path: "/admin/documents",
+      path: "/agent/documents",
       color: green[500]
     },
     {
       title: "Statistiques",
       description: "Consultez les données d'utilisation de la plateforme",
       icon: <BarChart fontSize="large" />,
-      path: "/admin/statistiques",
+      path: "/agent/statistiques",
       color: orange[500]
     },
     {
       title: "Événements",
       description: "Planifiez des conférences et ateliers",
       icon: <Event fontSize="large" />,
-      path: "/admin/evenements",
+      path: "/agent/evenements",
       color: pink[500]
     },
 
@@ -299,42 +259,42 @@ const AgentDashboard = () => {
       title: "Filière",
       description: "Ajouter et modifier les filières",
       icon: <AccountTree fontSize="large" />,
-      path: "/admin/filière",
+      path: "/agent/filière",
       color: teal[500]
     },
     {
       title: "Classe",
       description: "Gérer les classes et groupes d'étudiants",
       icon: <Class fontSize="large" />,
-      path: "/admin/classe",
+      path: "/agent/classe",
       color: deepPurple[300]
     },
     {
       title: "Semestre",
       description: "Organiser les semestres académiques",
       icon: <DateRange fontSize="large" />,
-      path: "/admin/semestre",
+      path: "/agent/semestre",
       color: blue[300]
     },
     {
       title: "Matière",
       description: "Gérer le catalogue des matières",
       icon: <MenuBook fontSize="large" />,
-      path: "/admin/matière",
+      path: "/agent/matière",
       color: orange[300]
     },
     {
       title: "Emploi",
       description: "Gérer les emplois nécessaires",
       icon: <Event fontSize="large" />,
-      path: "/admin/schedules",
+      path: "/agent/schedules",
       color: green[300]
     },
     {
       title: "Calendrier",
       description: "Gérer les calendriers des Examens",
       icon: <Event fontSize="large" />,
-      path: "/admin/examens",
+      path: "/agent/examens",
       color: pink[300]
     }
   ];
@@ -389,7 +349,7 @@ const AgentDashboard = () => {
                           width: 60,
                           height: 60,
                           borderRadius: '12px',
-                          bgcolor: `${feature.color}20`,
+                          bgcolor:` ${feature.color}20`,
                           color: feature.color,
                           mb: 2,
                           mx: 'auto'

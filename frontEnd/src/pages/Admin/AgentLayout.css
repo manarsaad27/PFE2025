@@ -1,0 +1,161 @@
+/* Layout Container */
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  /* Sidebar Styles */
+  .sidebar {
+    width: 280px;
+    background-color: white;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: fixed;
+  }
+  
+  .profile-section {
+    padding: 24px;
+  }
+  
+  .profile-section h2 {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+  }
+  
+  .profile-section p {
+    margin: 8px 0;
+    color: #333;
+    font-size: 0.875rem;
+  }
+  
+  .divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 16px 0;
+  }
+  
+  /* Menu Styles */
+  .menu {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    color: #333;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background-color 0.3s;
+  }
+  
+  .menu-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .menu-icon {
+    margin-right: 16px;
+    color: #555;
+    font-size: 1.25rem;
+  }
+  
+  /* Logout Button */
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    margin: 16px;
+    border: 1px solid #f44336;
+    color: #f44336;
+    background-color: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.3s;
+  }
+  
+  .logout-btn:hover {
+    background-color: #ffebee;
+  }
+  
+  .logout-icon {
+    margin-right: 8px;
+  }
+  
+  /* Main Content Styles */
+  .main-content {
+    flex-grow: 1;
+    margin-left: 280px;
+  }
+  
+  .app-header {
+    position: fixed;
+    top: 0;
+    left: 280px;
+    right: 0;
+    height: 64px;
+    background-color: white;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 100;
+  }
+  
+  .app-header h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .profile-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 8px;
+  }
+  
+  .profile-btn:hover {
+    background-color: #f0f0f0;
+    border-radius: 50%;
+  }
+  
+  /* Profile Menu */
+  .profile-menu {
+    position: absolute;
+    right: 24px;
+    top: 64px;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 180px;
+    z-index: 101;
+  }
+  
+  .profile-menu .menu-item {
+    padding: 8px 16px;
+    color: #f44336;
+  }
+  
+  /* Content Area */
+  .content-area {
+    padding: 24px;
+    margin-top: 64px;
+  }
+  
+  /* Loading Container */
+  .loading-container {
+    padding: 16px;
+    font-size: 1rem;
+    color: #333;
+  }

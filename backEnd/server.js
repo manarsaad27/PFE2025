@@ -139,8 +139,11 @@ app.post("/connexion", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Vérification enseignant
-    const [enseignants] = await pool.query("SELECT * FROM enseignants WHERE Email = ?", [email]);
+    // 1. Vérification enseignant
+    const [enseignants] = await pool.query(
+      "SELECT CIN, Email, Password FROM enseignants WHERE Email = ?", 
+      [email]
+    );
     
     if (enseignants.length > 0) {
       const enseignant = enseignants[0];
@@ -148,15 +151,19 @@ app.post("/connexion", async (req, res) => {
       
       if (isMatch) {
         const token = jwt.sign(
-          { cin: enseignant.CIN, role: 'enseignant' },
+          { 
+            cin: enseignant.CIN, 
+            role: 'enseignant',
+            email: enseignant.Email
+          },
           process.env.JWT_SECRET || 'dev-secret-only',
           { expiresIn: '24h' }
         );
-      
+
+
         return res.json({
           success: true,
-          message: "Connexion réussie",
-          token: token, // Important
+          token,
           role: "enseignant",
           cin: enseignant.CIN,
           email: enseignant.Email
@@ -164,24 +171,30 @@ app.post("/connexion", async (req, res) => {
       }
     }
 
-    // Vérification étudiant
-    const [etudiants] = await pool.query("SELECT * FROM etudiant WHERE email = ?", [email]);
+    // 2. Vérification étudiant
+    const [etudiants] = await pool.query(
+      "SELECT CIN, email, Password FROM etudiant WHERE email = ?", 
+      [email]
+    );
     
     if (etudiants.length > 0) {
       const etudiant = etudiants[0];
-      const isPasswordValid = await bcrypt.compare(password, etudiant.Password);
+      const isMatch = await bcrypt.compare(password, etudiant.Password);
       
-      if (isPasswordValid) {
+      if (isMatch) {
         const token = jwt.sign(
-          { cin: etudiant.CIN, role: 'etudiant' },
+          { 
+            cin: etudiant.CIN, 
+            role: 'etudiant',
+            email: etudiant.email
+          },
           process.env.JWT_SECRET || 'dev-secret-only',
           { expiresIn: '24h' }
         );
-        
+
         return res.json({
           success: true,
-          message: "Connexion réussie",
-          token: token,
+          token,
           role: "etudiant",
           cin: etudiant.CIN,
           email: etudiant.email
@@ -189,16 +202,24 @@ app.post("/connexion", async (req, res) => {
       }
     }
 
+    // 3. Si aucun utilisateur trouvé ou mot de passe incorrect
     return res.status(401).json({ 
       success: false,
-      message: "Identifiants incorrects" 
+      message: "Email ou mot de passe incorrect" 
     });
 
   } catch (error) {
-    console.error("Erreur lors de la connexion :", error);
+    console.error("Erreur connexion:", {
+      message: error.message,
+      stack: error.stack,
+      request: req.body
+    });
+    
     return res.status(500).json({ 
       success: false,
-      message: "Erreur interne du serveur"
+      message: process.env.NODE_ENV === 'development' 
+        ? `Erreur serveur: ${error.message}`
+        : "Erreur lors de la connexion"
     });
   }
 });
@@ -590,6 +611,48 @@ const authenticate = (allowedRoles) => async (req, res, next) => {
     });
   }
 };
+
+const authenticatee = (allowedRoles) => async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ 
+      success: false, 
+      message: "Token manquant ou mal formaté" 
+    });
+  }
+
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    // Utilisez la même clé secrète que pour la génération
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-only');
+    
+    // Vérification du rôle
+    if (!allowedRoles.includes(decoded.role)) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Accès non autorisé pour ce rôle" 
+      });
+    }
+
+    // Ajoutez les infos décodées à la requête
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error("Erreur de vérification du token:", error.message);
+    
+    let message = "Token invalide";
+    if (error.name === 'TokenExpiredError') message = "Session expirée";
+    if (error.name === 'JsonWebTokenError') message = "Token malformé";
+    
+    res.status(401).json({ 
+      success: false, 
+      message 
+    });
+  }
+};
+
 
 // Middleware spécifique pour les agents
 const authenticateAgent = (allowedRoles = ['Agent', 'Superviseur', 'Administrateur']) => {
@@ -1708,30 +1771,33 @@ app.post('/api/matieres', async (req, res) => {
 app.get('/api/matieres', async (req, res) => {
   try {
     const [matieres] = await pool.query(`
-      SELECT m.id, m.nom, m.credits, 
-             e.Nom_et_prénom AS enseignant,
-             s.numero AS semestre,
-             c.nom AS classe
+      SELECT 
+        m.id, 
+        m.nom, 
+        m.credits, 
+        m.enseignant_id,
+        m.semestre_id,
+        s.numero AS semestre_numero,
+        c.nom AS classe_nom,
+        e.Nom_et_prénom AS enseignant
       FROM matieres m
-      LEFT JOIN enseignants e ON m.enseignant_id = e.Cin
       LEFT JOIN semestres s ON m.semestre_id = s.id
       LEFT JOIN classes c ON s.classe_id = c.id
+      LEFT JOIN enseignants e ON m.enseignant_id = e.Cin
     `);
     
     res.json({
       success: true,
       data: matieres
     });
-
   } catch (error) {
     console.error('Erreur:', error);
     res.status(500).json({
       success: false,
-      error: 'Erreur serveur'
+      message: 'Erreur serveur'
     });
   }
 });
-
 // Route PUT pour modifier une matière
 app.put('/api/matieres/:id', async (req, res) => {
   try {
@@ -1870,35 +1936,21 @@ app.post('/api/evenements', async (req, res) => {
   try {
     const { titre, date, lieu, type, description } = req.body;
 
-    // Validation
-    if (!titre || !date || !lieu || !type) {
-      return res.status(400).json({
-        success: false,
-        message: 'Les champs titre, date, lieu et type sont obligatoires'
-      });
-    }
-
     const [result] = await pool.query(
       'INSERT INTO evenements (titre, date, lieu, type, description) VALUES (?, ?, ?, ?, ?)',
-      [titre, new Date(date), lieu, type, description || null]
+      [titre, date, lieu, type, description]
     );
 
-    res.status(201).json({
-      success: true,
-      data: {
-        id: result.insertId,
-        ...req.body
-      }
+    res.status(201).json({ 
+      success: true, 
+      data: { id: result.insertId, titre, date, lieu, type, description } 
     });
-
   } catch (error) {
     console.error('Erreur création événement:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur'
-    });
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });
+
 
 // Route GET pour récupérer tous les événements
 app.get('/api/evenements', async (req, res) => {
@@ -1906,20 +1958,13 @@ app.get('/api/evenements', async (req, res) => {
     const [evenements] = await pool.query(
       'SELECT id, titre, date, lieu, type, description FROM evenements ORDER BY date DESC'
     );
-    
-    res.json({
-      success: true,
-      data: evenements
-    });
-
+    res.json({ success: true, data: evenements });
   } catch (error) {
     console.error('Erreur récupération événements:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur'
-    });
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });
+
 
 // Route PUT pour modifier un événement
 app.put('/api/evenements/:id', async (req, res) => {
@@ -2274,9 +2319,11 @@ app.get("/api/teaching-data", async (req, res) => {
     const [semestres] = await pool.query(
       "SELECT id, numero, classe_id FROM semestres ORDER BY numero"
     );
-    const [matieres] = await pool.query(
-      "SELECT id, nom, semestre_id FROM matieres ORDER BY nom"
-    );
+    const [matieres] = await pool.query(`
+      SELECT m.id, m.nom, m.semestre_id, s.numero AS semestre_numero
+      FROM matieres m
+      LEFT JOIN semestres s ON m.semestre_id = s.id
+    `);
 
     res.json({
       success: true,
@@ -2322,19 +2369,22 @@ const uploadDocument = multer({
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-powerpoint', // .ppt
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation' // .pptx
     ];
-    
+
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Seuls les fichiers PDF, Word et Excel sont autorisés'), false);
+      cb(new Error('Seuls les fichiers PDF, Word, Excel et PowerPoint sont autorisés'), false);
     }
   }
 });
+
 
 
 
@@ -3471,12 +3521,46 @@ io.on("connection", (socket) => {
       adminSockets.push(socket.id);
     }
   });
+  socket.on('registerAsEnseignant', () => {
+    socket.join('enseignants');
+  });
+
+  socket.on('registerAsEtudiant', () => {
+    socket.join('etudiants');
+  });
+
 
   socket.on("disconnect", () => {
     adminSockets = adminSockets.filter((id) => id !== socket.id);
   
   });
 });
+app.patch('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      `UPDATE notifications SET read_status = TRUE WHERE id = ?`,
+      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// PUT /api/notifications/mark-as-read?audience=etudiants
+app.put('/api/notifications/mark-as-read', async (req, res) => {
+  const { audience } = req.query;
+  try {
+    await pool.query(
+      `UPDATE notifications SET read_status = TRUE WHERE audience = ? OR audience = 'tous'`,
+      [audience]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
 
 // Route : soumettre une réclamation
 app.post("/api/reclamations", async (req, res) => {
@@ -3587,7 +3671,6 @@ app.put("/api/admin/reclamations/:id/status", authenticateAdmin, async (req, res
 
 //Ageeeeeeeents
 
-// GET all agents
 app.get('/agents', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM agents');
@@ -3721,25 +3804,34 @@ app.post('/api/agents/login', async (req, res) => {
   }
 });
 
-
-app.get('/api/agents/profile', authenticateAgent(), async (req, res) => {
+// ✅ Route pour récupérer le profil d'un agent connecté
+app.get("/api/agents/profile", authenticate(['Agent', 'Superviseur', 'Administrateur']), async (req, res) => {
   try {
-    const [results] = await pool.query(
-      'SELECT id, nom, prenom, email, departement, role FROM agents WHERE id = ?',
+    const [agent] = await pool.query(
+      "SELECT id, nom, prenom, email, role, departement FROM agents WHERE id = ?",
       [req.user.id]
     );
 
-    if (results.length === 0) {
-      return res.status(404).json({ success: false, message: 'Agent non trouvé' });
+    if (!agent.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Agent non trouvé"
+      });
     }
 
-    res.json({ success: true, data: results[0] });
+    res.json({
+      success: true,
+      data: agent[0]
+    });
+
   } catch (error) {
-    console.error('Erreur:', error);
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    console.error("Erreur récupération profil agent:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur"
+    });
   }
 });
-
 
 
 
@@ -3902,6 +3994,202 @@ app.get('/api/stats/reclamations', async (req, res) => {
   } catch (err) {
     console.error("Erreur stats réclamations:", err);
     res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+
+const fetchMatieres = async () => {
+  try {
+    const res = await axios.get("http://localhost:5000/api/matieres");
+    const data = res.data.data || res.data;
+    
+    // Enrichir les données avec les infos semestre
+    const enrichedData = data.map(matiere => ({
+      ...matiere,
+      semestre_data: semestres.find(s => s.id === matiere.semestre_id)
+    }));
+    
+    setMatieres(enrichedData);
+  } catch (error) {
+    console.error("Erreur chargement:", error);
+    setSnackbar({
+      open: true,
+      message: error.response?.data?.message || "Erreur lors du chargement",
+      severity: "error"
+    });
+  }
+};
+
+
+
+// ✅ Route pour récupérer le profil d'un agent connecté
+app.get("/api/agents/profile", authenticate(['Agent', 'Superviseur', 'Administrateur']), async (req, res) => {
+  try {
+    const [agent] = await pool.query(
+      "SELECT id, nom, prenom, email, role, departement FROM agents WHERE id = ?",
+      [req.user.id]
+    );
+
+    if (!agent.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Agent non trouvé"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: agent[0]
+    });
+
+  } catch (error) {
+    console.error("Erreur récupération profil agent:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur"
+    });
+  }
+});
+
+
+
+// Récupérer les documents d'un enseignant spécifique
+app.get('/api/enseignant/documents/:enseignantId', async (req, res) => {
+  try {
+    const { enseignantId } = req.params;
+
+    const [documents] = await pool.query(`
+      SELECT 
+        d.id,
+        d.title,
+        d.file_name,
+        d.file_type,
+        d.file_size,
+        d.diffusion_date,
+        d.file_path,
+        f.nom AS filiere_nom,
+        c.nom AS classe_nom,
+        m.nom AS matiere_nom
+      FROM documents d
+      JOIN filieres f ON d.filiere_id = f.id
+      JOIN classes c ON d.classe_id = c.id
+      JOIN matieres m ON d.matiere_id = m.id
+      WHERE d.enseignant_id = ?
+      ORDER BY d.diffusion_date DESC
+    `, [enseignantId]);
+
+    res.json({
+      success: true,
+      data: documents.map(doc => ({
+        ...doc,
+        // Formatage de la date si nécessaire
+        diffusion_date: new Date(doc.diffusion_date).toLocaleDateString()
+      }))
+    });
+
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur"
+    });
+  }
+});
+
+
+
+
+app.get('/api/teacher-documents', authenticatee(['enseignant']), async (req, res) => {
+  try {
+    const [documents] = await pool.query(`
+      SELECT d.*, f.nom AS filiere_nom, c.nom AS classe_nom, m.nom AS matiere_nom
+      FROM documents d
+      JOIN filieres f ON d.filiere_id = f.id
+      JOIN classes c ON d.classe_id = c.id
+      JOIN matieres m ON d.matiere_id = m.id
+      WHERE d.enseignant_id = ?
+      ORDER BY d.diffusion_date DESC
+    `, [req.user.cin]);
+
+    res.json({ success: true, data: documents });
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+app.delete('/api/documents/:id', authenticatee(['enseignant']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Vérifier que le document appartient à l'enseignant
+    const [document] = await pool.query(
+      'SELECT file_path FROM documents WHERE id = ? AND enseignant_id = ?',
+      [id, req.user.cin]
+    );
+
+    if (!document.length) {
+      return res.status(404).json({ success: false, message: "Document non trouvé" });
+    }
+
+    // Supprimer le fichier physique
+    if (document[0].file_path) {
+      const filePath = path.join(__dirname, document[0].file_path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Supprimer de la base
+    await pool.query('DELETE FROM documents WHERE id = ?', [id]);
+    
+    res.json({ success: true, message: "Document supprimé" });
+  } catch (error) {
+    console.error("Erreur suppression:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+
+// Route pour récupérer les inscriptions
+app.get("/api/inscriptions", async (req, res) => {
+  try {
+    const [inscriptions] = await pool.query("SELECT * FROM formulaire");
+    res.json({
+      success: true,
+      data: inscriptions
+    });
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur"
+    });
+  }
+});
+
+
+
+
+// Nouvelle route pour obtenir les inscriptions avec les événements
+app.get("/api/inscriptions-with-events", async (req, res) => {
+  try {
+    const query = `
+      SELECT f.*, e.titre AS event_titre
+      FROM formulaire f
+      LEFT JOIN evenements e ON f.event_id = e.id
+    `;
+    const [inscriptions] = await pool.query(query);
+    res.json({
+      success: true,
+      data: inscriptions
+    });
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur serveur"
+    });
   }
 });
 

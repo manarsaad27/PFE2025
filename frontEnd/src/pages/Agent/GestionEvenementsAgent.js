@@ -12,7 +12,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
 import MuiAlert from '@mui/material/Alert';
 
-const GestionEvenements = () => {
+const GestionEvenementsAgent = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   useEffect(() => {
@@ -107,7 +107,7 @@ const GestionEvenements = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Button startIcon={<ArrowBack />} onClick={() => navigate('/admin/dashboard')} sx={{ mb: 2 }}>
+      <Button startIcon={<ArrowBack />} onClick={() => navigate('/agent/dashboard')} sx={{ mb: 2 }}>
         Retour
       </Button>
 
@@ -176,4 +176,4 @@ const GestionEvenements = () => {
   );
 };
 
-export default GestionEvenements;
+export default GestionEvenementsAgent;

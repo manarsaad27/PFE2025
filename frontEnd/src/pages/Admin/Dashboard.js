@@ -122,13 +122,7 @@ const AdminDashboard = () => {
       path: "/admin/utilisateurs",
       color: deepPurple[500]
     },
-    {
-      title: "Gestion des Cours",
-      description: "Ajoutez et modifiez les cours, TD, TP et ressources",
-      icon: <School fontSize="large" />,
-      path: "/admin/cours",
-      color: indigo[500]
-    },
+    
     {
       title: "Documents",
       description: "Gérez tous les documents partagés sur la plateforme",

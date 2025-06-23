@@ -241,38 +241,44 @@ const EtudiantProfil = () => {
 // Charger les notifications
 const loadNotifications = async () => {
   try {
-    const { data } = await axios.get(`enseignant/notifications`, {
+    const { data } = await axios.get(`http://localhost:5000/api/notifications?audience=etudiants`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    setNotifications(data.data);
-    setUnreadCount(data.data.filter((n) => !n.read_status).length);
+
+    if (data.success) {
+      setNotifications(data.notifications);
+      const unread = data.notifications.filter(n => !n.read_status).length;
+      setUnreadCount(unread);
+      console.log("Notifications reçues:", data.notifications);
+      
+    }
   } catch (error) {
-    console.error("Erreur lors du chargement des notifications:", error);
+    console.error("Erreur chargement notifications :", error);
   }
 };
-
 // Gérer l'ouverture/fermeture du popover
 const handleToggleNotifications = () => {
-  setOpen(!open);
-  if (hasNewNotification) {
+  const willOpen = !open;
+  setOpen(willOpen);
+  if (willOpen) {
+    markAllNotificationsAsRead(); // ✅ marque toutes comme lues dans la BDD
     setHasNewNotification(false);
+    setUnreadCount(0); // ✅ désactive le badge visuellement
   }
 };
-
 const handleCloseNotifications = () => {
   setOpen(false);
 };
-
 // Marquer une notification comme lue
 const markAsRead = async (id) => {
   try {
-    await axios.patch(`enseignant/notifications/${id}/read`, {}, {
+    await axios.patch(`http://localhost:5000/api/notifications/${id}/read`, {}, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    setNotifications(notifications.map(n => 
-      n.id === id ? {...n, read_status: true} : n
-    ));
-    setUnreadCount(unreadCount - 1);
+    setNotifications(prev => 
+      prev.map(n => n.id === id ? { ...n, read_status: true } : n)
+    );
+    setUnreadCount(prev => Math.max(prev - 1, 0));
   } catch (error) {
     console.error("Erreur lors du marquage comme lu:", error);
   }
@@ -280,17 +286,28 @@ const markAsRead = async (id) => {
 
 // Dans useEffect, ajoutez la gestion des sockets
 useEffect(() => {
-  socket.emit("registerAsTeacher", { cin });
-  socket.on("newNotification", (data) => {
-    setNotifications((prev) => [data, ...prev]);
-    setHasNewNotification(true);
-    setUnreadCount(prev => prev + 1);
+  socket.emit("registerAsEtudiant", { cin });
+
+  socket.on("newNotification", (notif) => {
+    if (notif.audience === "etudiants" || notif.audience === "tous") {
+      loadNotifications(); // recharge les vraies notifications
+    }
   });
 
-  return () => {
-    socket.off("newNotification");
-  };
+  return () => socket.off("newNotification");
 }, [cin]);
+const markAllNotificationsAsRead = async () => {
+  try {
+    await axios.put(`http://localhost:5000/api/notifications/mark-as-read?audience=etudiants`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    // Recharge les notifications mises à jour
+    await loadNotifications();
+  } catch (error) {
+    console.error("Erreur lors du marquage global des notifications :", error);
+  }
+};
+
 
 // Charger les notifications au montage et toutes les 30 secondes
 useEffect(() => {

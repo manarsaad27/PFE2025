@@ -95,7 +95,18 @@ const TeacherProfil = () => {
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
-
+  useEffect(() => {
+    socket.emit("registerAsEnseignant", { cin }); // ou "registerAsEtudiant"
+  
+    socket.on("newNotification", (notif) => {
+      if (notif.audience === "enseignants" || notif.audience === "tous") {
+        loadNotifications(); // recharge depuis l'API
+      }
+    });
+  
+    return () => socket.off("newNotification");
+  }, [cin]); // ou [id] pour l’étudiant
+  
   useEffect(() => {
     socket.on("newNotification", notif => {
       if (notif.audience === "enseignants" || notif.audience === "tous") {

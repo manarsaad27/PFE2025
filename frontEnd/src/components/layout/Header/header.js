@@ -12,7 +12,7 @@ const Header = () => {
   const [activeImage, setActiveImage] = useState(0);
   const images = [faculte, facultee, faculté];
   const navigate = useNavigate();
-const { isAuthenticated, role, logout } = useAuth();
+const { isAuthenticated, role} = useAuth();
   
 
   const handleProfileClick = () => {
@@ -38,7 +38,7 @@ const { isAuthenticated, role, logout } = useAuth();
 
   return (
     <div>
-      {/* Header Section */}
+     
       <header style={{
         display: "flex",
         alignItems: "center",
@@ -96,7 +96,7 @@ const { isAuthenticated, role, logout } = useAuth();
 )}
       </header>
 
-      {/* Scrolling Banner */}
+     
       <div style={{
         backgroundColor: "#0056b3",
         overflow: "hidden",
@@ -127,7 +127,7 @@ const { isAuthenticated, role, logout } = useAuth();
         }
       `}</style>
 
-      {/* Hero Section */}
+      
       <section style={{
         background: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${IMG})`,
         backgroundSize: 'cover',
@@ -161,7 +161,6 @@ const { isAuthenticated, role, logout } = useAuth();
         </div>
       </section>
 
-      {/* Institution Section */}
       <section style={{
         padding: '80px 20px',
         backgroundColor: '#fff'
@@ -469,7 +468,6 @@ const { isAuthenticated, role, logout } = useAuth();
         </div>
       </section>
 
-      {/* Values Section */}
       <section style={{
         padding: '80px 20px',
         backgroundColor: '#fff'
@@ -587,7 +585,6 @@ const { isAuthenticated, role, logout } = useAuth();
         </div>
       </section>
 
-      {/* Programs Section */}
       <section style={{
         padding: '80px 20px',
         background: 'linear-gradient(135deg, #2c3e50 0%, #4a6491 100%)'
@@ -631,7 +628,6 @@ const { isAuthenticated, role, logout } = useAuth();
             gap: '30px',
             marginTop: '40px'
           }}>
-            {/* Licence */}
             <div style={{
               background: '#fff',
               padding: '35px 30px',
@@ -700,7 +696,6 @@ const { isAuthenticated, role, logout } = useAuth();
               </ul>
             </div>
             
-            {/* Master */}
             <div style={{
               background: '#fff',
               padding: '35px 30px',
@@ -769,7 +764,6 @@ const { isAuthenticated, role, logout } = useAuth();
               </ul>
             </div>
             
-            {/* Doctorat */}
             <div style={{
               background: '#fff',
               padding: '35px 30px',

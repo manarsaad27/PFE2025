@@ -209,7 +209,7 @@ const GestionClasses = () => {
     <Box sx={{ padding: 3 }}>
        <Button 
     startIcon={<ArrowBack />} 
-    onClick={() => navigate('/admin/dashboard')} 
+    onClick={() => navigate('/agent/dashboard')} 
     sx={{ mb: 2 }}
   >
     Retour

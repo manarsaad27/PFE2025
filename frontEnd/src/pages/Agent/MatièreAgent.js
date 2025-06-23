@@ -246,10 +246,10 @@ const GestionMatieres = () => {
   const handleCloseSnackbar = () => setSnackbar({ ...snackbar, open: false });
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div style={{ padding: "0 2rem 2rem 2rem", margin: 0 }}>
       <Button 
         startIcon={<ArrowBack />} 
-        onClick={() => navigate('/admin/dashboard')} 
+        onClick={() => navigate('/agent/dashboard')} 
         sx={{ mb: 2 }}
       >
         Retour
