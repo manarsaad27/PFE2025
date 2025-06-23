@@ -274,16 +274,25 @@ const TeacherDocuments = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await api.get('/api/teacher-documents');
+      const response = await api.get(`/api/enseignant/documents/${newDoc.enseignant_id}`);
       setDocuments(response.data.data);
     } catch (error) {
       console.error("Erreur:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Erreur lors du chargement",
+        severity: "error"
+      });
     }
   };
 
   const downloadFile = async (id, fileName) => {
     try {
-      const response = await api.get(`/api/documents/${id}/download`, { responseType: 'blob' });
+      // Si le fichier est stocké dans le système de fichiers
+      const response = await api.get(`/api/documents/${id}/download`, { 
+        responseType: 'blob' 
+      });
+      
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -293,16 +302,47 @@ const TeacherDocuments = () => {
       link.remove();
     } catch (error) {
       console.error("Erreur:", error);
+      setSnackbar({
+        open: true,
+        message: "Erreur lors du téléchargement",
+        severity: "error"
+      });
     }
   };
 
+  
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/api/documents/${id}`);
-      setDocuments(documents.filter(doc => doc.id !== id));
-      setSnackbar({ open: true, message: 'Document supprimé avec succès', severity: 'success' });
+      // Récupération cohérente avec le stockage
+      const token = localStorage.getItem('token'); // Changé de 'teacherToken' à 'token'
+      const cin = localStorage.getItem('teacherCin');
+      
+      if (!token || !cin) {
+        throw new Error("Veuillez vous reconnecter - Session expirée");
+      }
+  
+      const response = await api.delete(`/api/documents/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      if (response.data.success) {
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
+        setSnackbar({
+          open: true,
+          message: "Document supprimé avec succès",
+          severity: "success"
+        });
+      }
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("Erreur détaillée:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Échec de la suppression",
+        severity: "error"
+      });
     }
   };
 
@@ -404,29 +444,32 @@ const TeacherDocuments = () => {
               </FormControl>
 
               <FormControl fullWidth>
-                <InputLabel sx={{ color: themeStyles.textSecondary }}>Matière</InputLabel>
-                <Select
-                  value={newDoc.matiere_id}
-                  label="Matière"
-                  onChange={(e) => setNewDoc({...newDoc, matiere_id: e.target.value})}
-                  disabled={!newDoc.classe_id}
-                  sx={{
-                    '& .MuiSelect-select': { color: themeStyles.textColor },
-                    backgroundColor: themeStyles.inputBg
-                  }}
-                >
-                  {teachingData.matieres
-                    .filter(matiere => {
-                      const semestre = teachingData.semestres.find(s => s.id === matiere.semestre_id);
-                      return semestre && semestre.classe_id.toString() === newDoc.classe_id.toString();
-                    })
-                    .map(matiere => (
-                      <MenuItem key={matiere.id} value={matiere.id}>
-                        {matiere.nom} (S{matiere.semestre_numero})
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
+  <InputLabel sx={{ color: themeStyles.textSecondary }}>Matière</InputLabel>
+  <Select
+    value={newDoc.matiere_id}
+    label="Matière"
+    onChange={(e) => setNewDoc({...newDoc, matiere_id: e.target.value})}
+    disabled={!newDoc.classe_id}
+    sx={{
+      '& .MuiSelect-select': { color: themeStyles.textColor },
+      backgroundColor: themeStyles.inputBg
+    }}
+  >
+    {teachingData.matieres
+      .filter(matiere => {
+        const semestre = teachingData.semestres.find(s => s.id === matiere.semestre_id);
+        return semestre && semestre.classe_id.toString() === newDoc.classe_id.toString();
+      })
+      .map(matiere => {
+        const semestre = teachingData.semestres.find(s => s.id === matiere.semestre_id);
+        return (
+          <MenuItem key={matiere.id} value={matiere.id}>
+            {matiere.nom} - S ({semestre?.numero})
+          </MenuItem>
+        );
+      })}
+  </Select>
+</FormControl>
             </div>
 
             <Divider sx={{ my: 3, backgroundColor: themeStyles.borderColor }} />
@@ -482,43 +525,46 @@ const TeacherDocuments = () => {
           </Typography>
           
           {documents.length === 0 ? (
-            <Typography variant="body1" sx={{ color: themeStyles.textSecondary }}>
-              Aucun document publié pour le moment
-            </Typography>
-          ) : (
-            <List>
-              {documents.map((doc) => (
-                <Card key={doc.id} style={{ marginBottom: '16px', backgroundColor: themeStyles.cardBg }}>
-                  <ListItem>
-                    <ListItemText
-                      primary={<Typography sx={{ color: themeStyles.textColor }}>{doc.title}</Typography>}
-                      secondary={
-                        <>
-                          <div style={{ color: themeStyles.textSecondary }}>
-                            {doc.filiere_nom} - {doc.classe_nom} - {doc.matiere_nom}
-                          </div>
-                          <div style={{ color: themeStyles.textSecondary }}>
-                            Publié le {new Date(doc.diffusion_date).toLocaleDateString()} | 
-                            {doc.file_type} ({Math.round(doc.file_size / 1024)} KB)
-                          </div>
-                        </>
-                      }
-                    />
-                    <Button
-                      startIcon={<DownloadIcon />}
-                      onClick={() => downloadFile(doc.id, doc.file_name)}
-                      sx={{ color: themeStyles.primaryColor }}
-                    >
-                      Télécharger
-                    </Button>
-                    <IconButton onClick={() => handleDelete(doc.id)} sx={{ color: '#ff6b6b' }}>
-                      <Delete />
-                    </IconButton>
-                  </ListItem>
-                </Card>
-              ))}
-            </List>
-          )}
+  <Typography variant="body1" sx={{ color: themeStyles.textSecondary }}>
+    Aucun document publié pour le moment
+  </Typography>
+) : (
+  <List>
+    {documents.map((doc) => (
+      <Card key={doc.id} style={{ marginBottom: '16px', backgroundColor: themeStyles.cardBg }}>
+        <ListItem>
+          <ListItemText
+            primary={<Typography sx={{ color: themeStyles.textColor }}>{doc.title}</Typography>}
+            secondary={
+              <>
+                <div style={{ color: themeStyles.textSecondary }}>
+                  {doc.filiere_nom} - {doc.classe_nom} - {doc.matiere_nom}
+                </div>
+                <div style={{ color: themeStyles.textSecondary }}>
+                  Publié le {doc.diffusion_date} | 
+                  {doc.file_type} ({Math.round(doc.file_size / 1024)} KB)
+                </div>
+                <div style={{ color: themeStyles.textSecondary }}>
+                  Fichier: {doc.file_name}
+                </div>
+              </>
+            }
+          />
+          <Button
+            startIcon={<DownloadIcon />}
+            onClick={() => downloadFile(doc.id, doc.file_name)}
+            sx={{ color: themeStyles.primaryColor }}
+          >
+            Télécharger
+          </Button>
+          <IconButton onClick={() => handleDelete(doc.id)} sx={{ color: '#ff6b6b' }}>
+            <Delete />
+          </IconButton>
+        </ListItem>
+      </Card>
+    ))}
+  </List>
+)}
 
           <Snackbar
             open={snackbar.open}

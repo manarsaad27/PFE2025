@@ -45,6 +45,8 @@ import { motion } from 'framer-motion';
 import { Notifications as NotificationsIcon, Close as CloseIcon } from '@mui/icons-material';
 import io from 'socket.io-client';
 import { useTheme } from "@mui/material/styles";
+import NotificationSystem from '../../components/NotificationSystem';
+
 const socket = io("http://localhost:5000");
 const TeacherProfil = () => {
   const navigate = useNavigate();
@@ -464,89 +466,9 @@ const TeacherProfil = () => {
         <div style={{ flexGrow: 1 }} />
 
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        <IconButton
-        ref={anchorRef}
-        onClick={togglePopover}
-        sx={{
-          color: "text.secondary",
-          "&:hover": {
-            backgroundColor: alpha(theme.palette.primary.main, 0.1)
-          }
-        }}
-      >
-        <Badge badgeContent={hasNew ? unreadCount : 0} color="error" invisible={!hasNew || unreadCount === 0}>
-          <NotificationsIcon />
-        </Badge>
-      </IconButton>
 
-      <Popover
-        open={open}
-        anchorEl={anchorRef.current}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        PaperProps={{
-          sx: {
-            width: isMobile ? "90vw" : 400,
-            maxHeight: "70vh",
-            overflow: "auto",
-            p: 2,
-            borderRadius: 2,
-            boxShadow: theme.shadows[10]
-          }
-        }}
-      >
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-          <Typography variant="h6">Notifications Cours</Typography>
-          <IconButton onClick={handleClose} size="small">
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        <Divider sx={{ mb: 2 }} />
-        {notifications.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" align="center">
-            Aucune notification
-          </Typography>
-        ) : (
-          <List dense>
-            {notifications.map((notif, i) => (
-              <React.Fragment key={notif.id}>
-                <ListItem
-                  sx={{
-                    backgroundColor: notif.read_status ? "inherit" : alpha(theme.palette.primary.main, 0.05),
-                    borderRadius: 1,
-                    mb: 1,
-                    "&:hover": {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1)
-                    }
-                  }}
-                >
-                  <ListItemText
-                    primary={<Typography variant="subtitle2">Système</Typography>}
-                    secondary={<Typography variant="body2">{notif.message}</Typography>}
-                  />
-                </ListItem>
-                {i < notifications.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-        )}
-      </Popover>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        <NotificationSystem audience="enseignants" />
+        
           <Button
             href="/teacherUploadDoc"
             color="primary"

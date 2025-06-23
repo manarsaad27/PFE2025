@@ -1936,18 +1936,70 @@ app.post('/api/evenements', async (req, res) => {
   try {
     const { titre, date, lieu, type, description } = req.body;
 
+    if (!titre || !date || !lieu || !type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Les champs titre, date, lieu et type sont obligatoires'
+      });
+    }
+
+    const eventDate = new Date(date);
+
     const [result] = await pool.query(
       'INSERT INTO evenements (titre, date, lieu, type, description) VALUES (?, ?, ?, ?, ?)',
-      [titre, date, lieu, type, description]
+      [titre, eventDate, lieu, type, description || null]
     );
 
-    res.status(201).json({ 
-      success: true, 
-      data: { id: result.insertId, titre, date, lieu, type, description } 
+    const eventId = result.insertId;
+    const createdAt = new Date();
+    const message = `Nouvel événement "${titre}" prévu le ${eventDate.toLocaleDateString()} à ${lieu}`;
+
+    //  Créer une notification pour enseignants et étudiants
+    const notifications = [
+      [null, 'enseignants', 'evenement', message, eventId, createdAt],
+      [null, 'etudiants', 'evenement', message, eventId, createdAt]
+    ];
+
+    await pool.query(
+      `INSERT INTO notifications (user_id, audience, type, message, reference_id, created_at) VALUES ?`,
+      [notifications]
+    );
+
+    // 📡 Socket.IO : notifier les deux groupes
+    io.to("enseignants").emit("newNotification", {
+      audience: "enseignants",
+      type: "evenement",
+      message,
+      reference_id: eventId,
+      created_at: createdAt
     });
+
+    io.to("etudiants").emit("newNotification", {
+      audience: "etudiants",
+      type: "evenement",
+      message,
+      reference_id: eventId,
+      created_at: createdAt
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: eventId,
+        titre,
+        date,
+        lieu,
+        type,
+        description
+      }
+    });
+
   } catch (error) {
     console.error('Erreur création événement:', error);
-    res.status(500).json({ success: false, message: 'Erreur serveur' });
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
   }
 });
 
@@ -2838,14 +2890,7 @@ app.post("/auth/login", async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-// Route pour créer un examen (admin seulement)
+// Route pour créer un examen (admin seulement
 app.post('/api/examens',  async (req, res) => {
   try {
     const {
@@ -2943,29 +2988,57 @@ app.get('/api/examens', async (req, res) => {
   }
 });
 
-app.get('/api/notifications', async (req, res) => {
+
+// GET /api/notifications
+app.get('/api/notifications', authenticate, async (req, res) => {
+  const { audience } = req.query;
+
   try {
-    const { audience } = req.query;
-
-    if (!audience || !['enseignants', 'etudiants', 'tous'].includes(audience)) {
-      return res.status(400).json({ success: false, message: 'Audience invalide ou manquante' });
-    }
-
-    const [notifications] = await pool.query(
-      `SELECT * FROM notifications 
-       WHERE audience IN (?, 'tous')
-       ORDER BY created_at DESC`,
-      [audience]
-    );
+    const [notifications] = await pool.query(`
+      SELECT * FROM notifications
+      WHERE (audience = ? OR audience = 'tous')
+      ORDER BY created_at DESC
+    `, [audience]);
 
     res.json({ success: true, notifications });
-
-  } catch (error) {
-    console.error('Erreur récupération notifications:', error);
-    res.status(500).json({ success: false, message: 'Erreur serveur lors de la récupération des notifications' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 });
 
+// PATCH /api/notifications/:id/read
+app.patch('/api/notifications/:id/read', authenticate, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query(`
+      UPDATE notifications 
+      SET read_status = TRUE 
+      WHERE id = ?
+    `, [id]);
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// PUT /api/notifications/mark-as-read
+app.put('/api/notifications/mark-as-read', authenticate, async (req, res) => {
+  const { audience } = req.query;
+
+  try {
+    await pool.query(`
+      UPDATE notifications 
+      SET read_status = TRUE 
+      WHERE audience = ? OR audience = 'tous'
+    `, [audience]);
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
 
 // Route pour publier/diffuser un examen (admin seulement)
 app.put('/api/examens/:id/publish', async (req, res) => {
@@ -3521,46 +3594,46 @@ io.on("connection", (socket) => {
       adminSockets.push(socket.id);
     }
   });
-  socket.on('registerAsEnseignant', () => {
-    socket.join('enseignants');
+  socket.on('registerUser', ({ audience }) => {
+    socket.join([audience, 'tous']);
   });
+  // socket.on('registerAsEnseignant', () => {
+  //   socket.join('enseignants');
+  // });
 
-  socket.on('registerAsEtudiant', () => {
-    socket.join('etudiants');
-  });
-
+  // socket.on('registerAsEtudiant', () => {
+  //   socket.join('etudiants');
+  // });
+  function emitNotification(notification) {
+    io.to(notification.audience).emit('newNotification', notification);
+    io.to('tous').emit('newNotification', notification);
+  }
 
   socket.on("disconnect", () => {
     adminSockets = adminSockets.filter((id) => id !== socket.id);
   
   });
 });
-app.patch('/api/notifications/:id/read', async (req, res) => {
+
+app.get('/api/notifications/unread', async (req, res) => {
+  const { cin } = req.user; // Récupéré du token JWT
+  
   try {
-    const [result] = await pool.query(
-      `UPDATE notifications SET read_status = TRUE WHERE id = ?`,
-      [req.params.id]
-    );
-    res.json({ success: true });
+    const [notifications] = await pool.query(`
+      SELECT n.* 
+      FROM notifications n
+      LEFT JOIN notification_read_status nr ON n.id = nr.notification_id AND nr.user_cin = ?
+      WHERE (n.audience = ? OR n.audience = 'tous')
+      AND (nr.read_status IS NULL OR nr.read_status = FALSE)
+      AND (n.expiration_date IS NULL OR n.expiration_date > NOW())
+      ORDER BY n.created_at DESC
+    `, [cin, 'etudiants']);
+    
+    res.json({ success: true, notifications });
   } catch (err) {
     res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 });
-
-// PUT /api/notifications/mark-as-read?audience=etudiants
-app.put('/api/notifications/mark-as-read', async (req, res) => {
-  const { audience } = req.query;
-  try {
-    await pool.query(
-      `UPDATE notifications SET read_status = TRUE WHERE audience = ? OR audience = 'tous'`,
-      [audience]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Erreur serveur" });
-  }
-});
-
 
 // Route : soumettre une réclamation
 app.post("/api/reclamations", async (req, res) => {
@@ -4208,5 +4281,5 @@ const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Serveur en écoute sur http://localhost:${PORT}`);
 }).on('error', (err) => {
-  console.error('❌ Erreur du serveur:', err.message);
+ 
 });
