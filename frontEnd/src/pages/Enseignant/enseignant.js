@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import './../../styles.css'; // Fichier CSS pour les styles
+import './../../styles.css'; 
 
 function Navbar() {
-  const [isOpen, setIsOpen] = useState(false); // État pour gérer le menu déroulant
+  const [isOpen, setIsOpen] = useState(false); 
 
   return (
     <nav className="navbar">
-      {/* Logo */}
       <div className="navbar-logo">
         
       </div>
-
-      {/* Liens de navigation (visible sur les grands écrans) */}
       <div className={`navbar-links ${isOpen ? 'active' : ''}`}>
         <a href="/">Accueil</a>
         <a href="/formations">Formations</a>

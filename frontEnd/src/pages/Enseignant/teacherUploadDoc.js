@@ -288,7 +288,6 @@ const TeacherDocuments = () => {
 
   const downloadFile = async (id, fileName) => {
     try {
-      // Si le fichier est stocké dans le système de fichiers
       const response = await api.get(`/api/documents/${id}/download`, { 
         responseType: 'blob' 
       });
@@ -313,8 +312,7 @@ const TeacherDocuments = () => {
   
   const handleDelete = async (id) => {
     try {
-      // Récupération cohérente avec le stockage
-      const token = localStorage.getItem('token'); // Changé de 'teacherToken' à 'token'
+      const token = localStorage.getItem('token'); 
       const cin = localStorage.getItem('teacherCin');
       
       if (!token || !cin) {

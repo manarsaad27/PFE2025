@@ -39,7 +39,6 @@ import {
 import axios from 'axios';
 import { useTheme } from '@mui/material/styles';
 import { toast } from 'react-toastify';
-// En haut de votre AdminAgents.jsx
 axios.defaults.baseURL = 'http://localhost:5000';
 const AdminAgents = () => {
    const navigate = useNavigate();
@@ -76,7 +75,7 @@ const AdminAgents = () => {
 
   const fetchAgents = async () => {
   try {
-    const response = await axios.get('/agents'); // Pointe maintenant vers http://localhost:5000/agents
+    const response = await axios.get('/agents'); 
     setAgents(response.data.data);
   } catch (error) {
     toast.error('Erreur lors du chargement des agents');

@@ -27,7 +27,6 @@ const GestionUtilisateurs = () => {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [selectedUserToDelete, setSelectedUserToDelete] = useState(null);
 
-  // Récupération des infos de l'utilisateur connecté
   const currentUser = JSON.parse(localStorage.getItem('agentInfo') || localStorage.getItem('adminInfo') || '{}');
 
   useEffect(() => {
@@ -44,7 +43,6 @@ const GestionUtilisateurs = () => {
   };
 
   const handleEdit = (user) => {
-    // Pour les agents, limiter l'édition à certains champs
     if (isAgentRoute) {
       setForm({
         Cin: user.Cin,
@@ -54,7 +52,7 @@ const GestionUtilisateurs = () => {
         role: user.role,
       });
     } else {
-      // Pour les admins, permettre une édition complète
+    
       setForm({
         Cin: user.Cin,
         nom: user.Nom_et_prénom,
@@ -80,7 +78,6 @@ const GestionUtilisateurs = () => {
   };
 
   const handleConfirmDelete = (user) => {
-    // Pour les agents, vérifier les permissions avant suppression
     if (isAgentRoute && currentUser.role !== 'Administrateur') {
       setSnackbar({ open: true, message: "Action non autorisée", severity: "warning" });
       return;

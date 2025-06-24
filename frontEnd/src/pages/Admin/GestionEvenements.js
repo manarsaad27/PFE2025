@@ -40,7 +40,6 @@ const GestionEvenements = () => {
     severity: "success"
   });
 
-  // Configuration des endpoints
   const API_CONFIG = {
     baseURL: "http://localhost:5000",
     endpoints: {

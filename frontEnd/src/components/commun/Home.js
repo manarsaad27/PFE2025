@@ -29,8 +29,6 @@ const Home= () => {
  
  
    const checkAdminStatus = () => {
-     // Implémentez votre logique de vérification ici
-     // Par exemple, vérifier dans localStorage ou via une API
      return localStorage.getItem('isAdmin') === 'true';
    };
  

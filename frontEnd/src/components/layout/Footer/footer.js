@@ -16,7 +16,6 @@ export default function Footer() {
   const [formData, setFormData] = useState({ email: "", problem: "", userType: 'autre' });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // ✅ Tester après avoir déclaré les hooks
   if (location.pathname.startsWith("/agent")) {
     return null;
   }

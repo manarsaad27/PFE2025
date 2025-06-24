@@ -27,10 +27,8 @@ const GestionDocumentAgent = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState('all');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid'); 
   const API_URL = 'http://localhost:5000/api';
-
-  // Fonction de normalisation des données API
   const normalizeApiData = (response) => {
     if (!response) return [];
     if (Array.isArray(response.data?.data)) return response.data.data;
@@ -39,7 +37,6 @@ const GestionDocumentAgent = () => {
     return [];
   };
 
-  // Fonction pour récupérer la date de diffusion
   const getPublicationDate = (doc) => {
     if (doc.published_at) return new Date(doc.published_at);
     if (doc.createdAt) return new Date(doc.createdAt);
@@ -57,7 +54,6 @@ const GestionDocumentAgent = () => {
           axios.get(`${API_URL}/evenements`)
         ]);
 
-        // Normalisation des données
         const normalizedEmplois = normalizeApiData(emploisRes).map(d => ({ 
           ...d, 
           type: 'emploi',
@@ -76,7 +72,6 @@ const GestionDocumentAgent = () => {
           docType: 'Événement'
         }));
 
-        // Combiner et trier
         const allDocuments = [
           ...normalizedEmplois,
           ...normalizedExams,
@@ -98,7 +93,6 @@ const GestionDocumentAgent = () => {
     fetchDocuments();
   }, []);
 
-  // Filtrer les documents
   const filteredDocuments = tabValue === 'all' 
     ? documents 
     : documents.filter(doc => doc.type === tabValue);
@@ -165,7 +159,6 @@ const GestionDocumentAgent = () => {
     }
   };
 
-  // Fonction pour obtenir le titre du document
   const getDocumentTitle = (doc) => {
     switch(doc.type) {
       case 'emploi':
@@ -181,7 +174,6 @@ const GestionDocumentAgent = () => {
     }
   };
 
-  // Affichage en mode grille
   const renderGridItem = (doc) => (
     <Grid item xs={12} sm={6} md={4} key={`${doc.type}-${doc.id}`}>
       <Card sx={{ 
@@ -297,7 +289,6 @@ const GestionDocumentAgent = () => {
     </Grid>
   );
 
-  // Affichage en mode liste
   const renderListItem = (doc) => (
     <ListItem 
       key={`${doc.type}-${doc.id}`} 

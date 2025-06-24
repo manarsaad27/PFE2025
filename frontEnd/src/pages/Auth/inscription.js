@@ -26,20 +26,17 @@ const Inscription = () => {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(false);
 
-  // Fonction pour basculer entre les modes sombre et clair
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
     localStorage.setItem('darkMode', newMode.toString());
   };
 
-  // Vérifier le mode au chargement
   useEffect(() => {
     const savedMode = localStorage.getItem('darkMode') === 'true';
     setDarkMode(savedMode);
   }, []);
 
-  // Liste des filières avec leurs classes correspondantes
   const [filieres, setFilieres] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedFiliere, setSelectedFiliere] = useState('');
@@ -47,7 +44,6 @@ const Inscription = () => {
   const [classesError, setClassesError] = useState(null);
   const [availableClasses, setAvailableClasses] = useState([]);
 
-  // Styles dynamiques en fonction du mode
   const themeStyles = {
     backgroundColor: darkMode ? '#121212' : '#f0f2f5',
     textColor: darkMode ? '#ffffff' : '#000000',
@@ -63,7 +59,6 @@ const Inscription = () => {
     errorColor: '#ff6b6b'
   };
 
-  // Charger les filières depuis l'API
   useEffect(() => {
     const fetchFilieres = async () => {
       try {
@@ -71,18 +66,17 @@ const Inscription = () => {
       
         if (response.ok) {
           const data = await response.json();
-          setFilieres(data.data); // S'assurer que c'est un tableau
+          setFilieres(data.data); 
         }
       } catch (error) {
         console.error("Erreur lors du chargement des filières:", error);
-        setFilieres([]); // Définir un tableau vide en cas d'erreur
+        setFilieres([]); 
       }
     };
 
     fetchFilieres();
   }, []);
 
-  // Charger les classes quand une filière est sélectionnée
   useEffect(() => {
     const fetchClasses = async () => {
       if (!selectedFiliere) {
@@ -123,10 +117,9 @@ const Inscription = () => {
     setFormData(prev => ({
       ...prev,
       filière: filiereId,
-      classe: '' // Réinitialise la sélection de classe
+      classe: '' 
     }));
 
-    // Chargement des classes seulement si une filière est sélectionnée
     if (filiereId) {
       setLoadingClasses(true);
       try {
@@ -153,7 +146,6 @@ const Inscription = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Si la filière change, réinitialiser la classe
     if (name === "filière") {
       setFormData({
         ...formData,
@@ -167,7 +159,6 @@ const Inscription = () => {
       });
     }
 
-    // Validation en temps réel pour le mot de passe
     if (name === "password") {
       validatePassword(value);
     }
@@ -243,7 +234,6 @@ const Inscription = () => {
   console.log(formData.filière)
     if (validateForm()) {
       try {
-        // Préparez les données dans le format attendu par l'API
         const payload = {
           Cin: formData.Cin,
           Nom_et_prénom: formData.Nom_et_prénom,
@@ -251,11 +241,11 @@ const Inscription = () => {
           email: formData.email,
           password: formData.password,
           confirmPassword: formData.confirmPassword,
-          filiere: formData.filière, // Notez la conversion ici
+          filiere: formData.filière, 
           classe: formData.classe
         };
   
-        console.log("Données envoyées:", payload); // Debug
+        console.log("Données envoyées:", payload); 
   
         const response = await fetch(`${API_URL}/etudiant`, {
           method: "POST",
@@ -268,13 +258,12 @@ const Inscription = () => {
         const data = await response.json();
         
         if (!response.ok) {
-          console.error("Erreur serveur:", data); // Debug
+          console.error("Erreur serveur:", data); 
           if (data.errors) setErrors(data.errors);
           alert(data.message || "Erreur lors de l'inscription");
           return;
         }
   
-        // Sauvegarde des données
         localStorage.setItem('studentProfile', JSON.stringify({
           filiere: formData.filière,
           classe: formData.classe

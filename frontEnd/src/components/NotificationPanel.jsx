@@ -1,4 +1,3 @@
-// components/NotificationBell.jsx
 import React, { useEffect, useState } from 'react';
 import { IconButton, Badge, ClickAwayListener } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -8,10 +7,10 @@ import io from 'socket.io-client';
 const socket = io('http://localhost:5000');
 
 const NotificationBell = ({
-  apiUrl,             // URL pour charger les notifications existantes
-  socketEvent,        // Nom de l'événement WebSocket (ex: 'newReclamation')
-  socketRegister,     // Message à envoyer au socket à l’init (ex: 'registerAsAdmin')
-  renderItem,         // Fonction pour rendre chaque notification
+  apiUrl,            
+  socketEvent,        
+  socketRegister,     
+  renderItem,         
   title = "Notifications"
 }) => {
   const [notifications, setNotifications] = useState([]);

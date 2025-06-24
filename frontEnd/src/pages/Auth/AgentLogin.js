@@ -28,13 +28,11 @@ const AgentLogin = () => {
       const response = await axios.post('/api/agents/login', credentials);
       
       if (response.data.success) {
-        // Stocker le token et les infos de l'agent
+        
         localStorage.setItem('token', response.data.token); 
 localStorage.setItem('agentToken', response.data.token);
 localStorage.setItem('agentInfo', JSON.stringify(response.data.agent));
 localStorage.setItem('role', response.data.agent.role); 
-
-        // Rediriger vers le tableau de bord
         navigate('/agent/dashboard');
       } else {
         setError(response.data.message || 'Échec de la connexion');
@@ -46,7 +44,6 @@ localStorage.setItem('role', response.data.agent.role);
     }
   };
 
-  // Styles JSX
   const styles = {
     container: {
       display: 'flex',

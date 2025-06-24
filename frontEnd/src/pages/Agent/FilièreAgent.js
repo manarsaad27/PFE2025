@@ -32,12 +32,11 @@ const GestionFilieresAgent = () => {
  const fetchFilieres = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/filieres");
-      // Accédez à res.data.data au lieu de res.data
-      setFilieres(res.data.data || []); // Utilisez un tableau vide par défaut
+      setFilieres(res.data.data || []); 
     } catch (error) {
       console.error("Erreur chargement :", error);
       setSnackbar({ open: true, message: "Erreur lors du chargement", severity: "error" });
-      setFilieres([]); // Assurez-vous que filieres reste un tableau
+      setFilieres([]); 
     }
   };
 

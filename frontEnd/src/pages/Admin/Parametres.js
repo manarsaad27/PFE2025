@@ -8,7 +8,6 @@ import { ArrowBack } from '@mui/icons-material';
 const Parametres = () => {
   const navigate = useNavigate();
 
-  // État local pour les paramètres
   const [parametres, setParametres] = useState({
     nomEtablissement: 'Université XYZ',
     emailContact: 'contact@univ-xyz.edu',
@@ -24,9 +23,8 @@ const Parametres = () => {
   };
 
   const handleSubmit = () => {
-    // Ici, tu pourrais envoyer `parametres` à ton backend ou à une base de données
     setMessage('Paramètres enregistrés avec succès ✅');
-    setTimeout(() => setMessage(''), 3000); // Réinitialise le message après 3s
+    setTimeout(() => setMessage(''), 3000); 
   };
 
   return (

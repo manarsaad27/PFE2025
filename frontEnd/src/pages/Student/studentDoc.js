@@ -113,19 +113,16 @@ const StudentDoc = () => {
   const token = localStorage.getItem("token");
   const studentCin = localStorage.getItem("studentCin");
 
-  // Variables dérivées
   const availableSemesters = Object.keys(studentInfo.semestres);
   const subjectsForSemester = selectedSemester
     ? studentInfo.semestres[selectedSemester]?.map((m) => m.nom) || []
     : [];
 const [matiereSelected, setMatiereSelected] = useState();
-  // Handlers
   const [cacheDocuments, setCacheDocuments] = useState({});
   const handleSubjectSelect = (matiere) => {
     console.log(matiere.id);
     setMatiereSelected(matiere.id);
   };
-// ******************************************************
   useEffect(() => {
     if (!matiereSelected) return;
   
@@ -170,7 +167,7 @@ const [matiereSelected, setMatiereSelected] = useState();
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
-  // Chargement des données étudiant
+ 
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
@@ -232,8 +229,6 @@ const [matiereSelected, setMatiereSelected] = useState();
   const loadDocuments = async () => {
     try {
       setIsLoading(true);
-
-      // Trouver l'ID de la matière sélectionnée
       let matiereId = null;
       if (selectedSubject) {
         const matiere = studentInfo.semestres[selectedSemester]?.find(
@@ -257,11 +252,8 @@ const [matiereSelected, setMatiereSelected] = useState();
         setDocuments(
           response.data.documents.map((doc) => ({
             ...doc,
-            // Conversion des dates si nécessaire
             date: new Date(doc.diffusion_date).toLocaleDateString(),
-            // Formatage de la taille
             size: doc.file_size,
-            // Assurer que viewed est un booléen
             viewed: Boolean(doc.viewed),
           }))
         );
@@ -278,7 +270,6 @@ const [matiereSelected, setMatiereSelected] = useState();
     }
   }, [selectedSubject, studentCin]);
 
-  // Marquer un document comme vu
   const markAsViewed = async (documentId) => {
     try {
       await axios.post(
@@ -302,14 +293,13 @@ const [matiereSelected, setMatiereSelected] = useState();
     }
   };
 
-  // Téléchargement de document
   const handleDownload = async (id, file_name) => {
   try {
     const response = await axios.get(
       `http://localhost:5000/api/documents/${id}/download`,
       {
         responseType: "blob",
-        headers: { Authorization: `Bearer ${token}` } // Add authorization if needed
+        headers: { Authorization: `Bearer ${token}` } 
       }
     );
 
@@ -326,7 +316,6 @@ const [matiereSelected, setMatiereSelected] = useState();
   }
 };
 
-  // Filtrage des documents
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch = searchQuery
       ? doc.title?.toLowerCase().includes(searchQuery.toLowerCase())

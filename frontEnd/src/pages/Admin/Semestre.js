@@ -34,7 +34,7 @@ const GestionSemestres = () => {
   const fetchSemestres = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/semestres");
-      setSemestres(res.data.data || res.data); // Gère les deux formats de réponse
+      setSemestres(res.data.data || res.data); 
     } catch (error) {
       console.error("Erreur chargement:", error.response?.data || error.message);
       setSnackbar({ 
@@ -66,7 +66,6 @@ const GestionSemestres = () => {
 
   const handleSave = async () => {
     try {
-      // Validation
       if (!form.numero || !form.classe_id) {
         setSnackbar({ 
           open: true, 

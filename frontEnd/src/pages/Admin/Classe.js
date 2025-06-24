@@ -15,7 +15,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowBack } from '@mui/icons-material';
 const GestionClasses = () => {
   const navigate = useNavigate();
-  // États
   const [classes, setClasses] = useState([]);
   const [filieres, setFilieres] = useState([]);
   const [open, setOpen] = useState(false);
@@ -38,13 +37,10 @@ const GestionClasses = () => {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [selectedToDelete, setSelectedToDelete] = useState(null);
 
- 
-
-  // Récupérer les classes
   const fetchClasses = useCallback(async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/classes');
-      console.log("Réponse de l'API:", response.data); // Ajoutez cette ligne
+      console.log("Réponse de l'API:", response.data); 
       setClasses(response.data.data || response.data);
     } catch (error) {
       showError('Erreur lors du chargement des classes', error);
@@ -65,7 +61,6 @@ const GestionClasses = () => {
     fetchFilieres();
   }, [fetchClasses, fetchFilieres]);
 
-  // Afficher les erreurs
   const showError = (message, error) => {
     console.error(message, error);
     setSnackbar({
@@ -76,7 +71,6 @@ const GestionClasses = () => {
     });
   };
 
-  // Afficher les succès
   const showSuccess = (message) => {
     setSnackbar({
       open: true,
@@ -86,7 +80,6 @@ const GestionClasses = () => {
     });
   };
 
-  // Gérer l'édition
   const handleEditClick = (classe) => {
     setForm({
       id: classe.id,
@@ -97,13 +90,11 @@ const GestionClasses = () => {
     setOpen(true);
   };
 
-  // Gérer la suppression
   const handleDeleteClick = (classe) => {
     setSelectedToDelete(classe);
     setConfirmDeleteOpen(true);
   };
 
-  // Sauvegarder (création ou modification)
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -119,9 +110,8 @@ const GestionClasses = () => {
   
       let response;
       if (editing) {
-        // URL absolue avec vérification
         const apiUrl = `http://localhost:5000/api/classes/${form.id}`;
-        console.log("Envoi requête PUT à:", apiUrl); // Debug
+        console.log("Envoi requête PUT à:", apiUrl); 
         
         response = await axios.put(apiUrl, {
           nom: form.nom,
@@ -134,7 +124,7 @@ const GestionClasses = () => {
         }, config);
       }
   
-      console.log("Réponse serveur:", response.data); // Debug
+      console.log("Réponse serveur:", response.data); 
       showSuccess(editing ? "Classe modifiée" : "Classe créée");
       fetchClasses();
       setOpen(false);
@@ -150,7 +140,6 @@ const GestionClasses = () => {
     }
   };
   
-  // Confirmer la suppression
   const handleDeleteConfirm = async () => {
     setLoading(true);
     try {
@@ -166,14 +155,12 @@ const GestionClasses = () => {
       let errorMessage = 'Erreur lors de la suppression';
       
       if (error.response) {
-        // Erreur avec réponse du serveur
         errorMessage = error.response.data.message || errorMessage;
         console.error('Détails erreur:', {
           status: error.response.status,
           data: error.response.data
         });
       } else {
-        // Erreur sans réponse (problème réseau, etc.)
         console.error('Erreur réseau:', error.message);
       }
       
@@ -184,12 +171,10 @@ const GestionClasses = () => {
     }
   };
 
-  // Fermer les notifications
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // Pagination
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -199,7 +184,6 @@ const GestionClasses = () => {
     setPage(0);
   };
 
-  // Filtrage des données
   const filteredData = classes.filter(c =>
     c.nom.toLowerCase().includes(search.toLowerCase()) ||
     (c.filiere && c.filiere.toLowerCase().includes(search.toLowerCase()))

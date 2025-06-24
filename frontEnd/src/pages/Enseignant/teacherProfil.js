@@ -76,8 +76,6 @@ const TeacherProfil = () => {
     ? 'http://localhost:5000/api'
     : '/api';
 
-
-  // Charger les notifications
   const loadNotifications = async () => {
     try {
       const { data } = await axios.get("http://localhost:5000/api/notifications?audience=enseignants");
@@ -98,16 +96,16 @@ const TeacherProfil = () => {
     return () => clearInterval(interval);
   }, []);
   useEffect(() => {
-    socket.emit("registerAsEnseignant", { cin }); // ou "registerAsEtudiant"
+    socket.emit("registerAsEnseignant", { cin }); 
   
     socket.on("newNotification", (notif) => {
       if (notif.audience === "enseignants" || notif.audience === "tous") {
-        loadNotifications(); // recharge depuis l'API
+        loadNotifications(); 
       }
     });
   
     return () => socket.off("newNotification");
-  }, [cin]); // ou [id] pour l’étudiant
+  }, [cin]); 
   
   useEffect(() => {
     socket.on("newNotification", notif => {
@@ -126,7 +124,7 @@ const TeacherProfil = () => {
     return () => socket.off("newNotification");
   }, []);
   useEffect(() => {
-    socket.emit("registerAsEnseignant"); // Très important pour rejoindre la room
+    socket.emit("registerAsEnseignant");
   }, []);
   
   const togglePopover = () => {
@@ -139,7 +137,6 @@ const TeacherProfil = () => {
   };
 
   const handleClose = () => setOpen(false);
-  // Gérer l'ouverture/fermeture du popover
   const handleToggleNotifications = () => {
     setOpen(!open);
     if (hasNewNotification) {
@@ -151,7 +148,6 @@ const TeacherProfil = () => {
     setOpen(false);
   };
 
-  // Marquer une notification comme lue
   const markAsRead = async (id) => {
     try {
       await axios.patch(`${API_URL}/enseignant/notifications`, {}, {
@@ -166,7 +162,6 @@ const TeacherProfil = () => {
     }
   };
 
-  // Dans useEffect, ajoutez la gestion des sockets
   useEffect(() => {
     socket.emit("registerAsTeacher", { cin });
     socket.on("newNotification", (data) => {
@@ -180,13 +175,11 @@ const TeacherProfil = () => {
     };
   }, [cin]);
 
-  // Charger les notifications au montage et toutes les 30 secondes
   useEffect(() => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
-  // Styles réutilisables
   const styles = {
     container: {
       fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -255,10 +248,9 @@ const TeacherProfil = () => {
         setTeacherExams(examsRes.data.data);
       }
 
-      // Ajoutez cette partie pour stocker l'emploi du temps
       if (emploiRes.data.success && emploiRes.data.data.length > 0) {
-        const emploiData = emploiRes.data.data[0]; // Prenez le premier emploi du temps
-        setEmploiDuTemps(emploiData); // Stockez les données de l'emploi du temps
+        const emploiData = emploiRes.data.data[0]; 
+        setEmploiDuTemps(emploiData); 
 
         const emploiId = emploiData.id;
         if (!emploiId) {
@@ -295,8 +287,6 @@ const TeacherProfil = () => {
       navigate('/connexion');
       return;
     }
-
-    // Récupération des événements séparément car pas besoin d'authentification
     const fetchEvents = async () => {
       try {
         const response = await axios.get(`${API_URL}/evenements`);
@@ -311,13 +301,10 @@ const TeacherProfil = () => {
     fetchData();
   }, [fetchData, API_URL]);
 
-  // Débouncez les interactions utilisateur complexes
   const handleDownloadEmploi = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const teacherCin = localStorage.getItem('teacherCin');
-
-      // Optimisation: Vérifiez d'abord si l'emploi existe
       if (!emploiDuTemps?.fichier_path) {
         console.error("Aucun fichier d'emploi du temps disponible");
         return;
@@ -347,7 +334,6 @@ const TeacherProfil = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Prévisualisation immédiate
     const reader = new FileReader();
     reader.onload = (e) => setPreviewImage(e.target.result);
     reader.readAsDataURL(file);
@@ -409,7 +395,6 @@ const TeacherProfil = () => {
     );
   }
 
-  // Remplacez votre gestion d'erreur actuelle par :
   if (!teacherData) {
     return (
       <Box
@@ -779,7 +764,6 @@ const TeacherProfil = () => {
   );
 };
 
-// Composant séparé pour la carte d'événement
 const EventCard = ({ event, getArtGradient }) => {
   if (!event || !event.titre || !event.date) return null;
 

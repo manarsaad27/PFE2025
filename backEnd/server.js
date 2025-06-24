@@ -19,7 +19,6 @@ dotenv.config();
 
 const app = express();
 const router = express.Router();
-//app.use('/api', router);
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -27,30 +26,25 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
-// Configuration JWT améliorée
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-only';
 if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
   throw new Error('❌ Configuration critique: JWT_SECRET doit être défini en production');
 }
 
-// Configuration JWT
 const JWT_CONFIG = {
   secret: process.env.JWT_SECRET || 'dev-secret-only',
-  expiresIn: '7d' // Durée de validité du token
+  expiresIn: '7d' 
 };
 
-// Vérification de la configuration JWT
 if (!process.env.JWT_SECRET) {
   console.warn('⚠️ Avertissement: JWT_SECRET non défini dans .env - utilisation d\'une clé de développement');
   if (process.env.NODE_ENV === 'production') {
     throw new Error('Configuration critique: JWT_SECRET doit être défini en production');
   }
 }
-//const jwtSecret = process.env.JWT_SECRET || 'dev-secret-only';
-axios.defaults.baseURL = 'http://localhost:5000'; // Point direct vers le backend
+axios.defaults.baseURL = 'http://localhost:5000'; 
 axios.defaults.withCredentials = true;
-// Middlewares
+
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
@@ -62,14 +56,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.options('*', cors());
 app.use(cookieParser());
-app.use('/api', authRoutes); // plus de /api
+app.use('/api', authRoutes); 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
 
-// Configuration de la base de données
 const pool = mysql.createPool({
   host: "localhost",
   user: "root",
@@ -80,12 +73,11 @@ const pool = mysql.createPool({
   queueLimit: 0,
 }).promise();
 
-// Utilisez une URL absolue en développement
+
 const API_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:5000/api' 
   : '/api';
 
-// Exemple d'appel corrigé
 axios.get(`${API_URL}/filieres`)
   .then(response => console.log(response.data))
   .catch(error => {
@@ -95,7 +87,7 @@ axios.get(`${API_URL}/filieres`)
   });
 
 
-// Route pour la connexion admin
+
 app.post("/admin/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -106,13 +98,12 @@ app.post("/admin/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Email incorrect" });
     }
 
-    // Vérification simple car mot de passe non hashé dans votre DB
     if (password !== admin[0].password) {
       return res.status(401).json({ success: false, message: "Mot de passe incorrect" });
     }
 
     const token = jwt.sign(
-      { email: admin[0].Email, role: 'admin' }, // Utilisez email plutôt que CIN
+      { email: admin[0].Email, role: 'admin' }, 
       JWT_CONFIG.secret,
       { expiresIn: JWT_CONFIG.expiresIn }
     );
@@ -132,14 +123,10 @@ app.post("/admin/login", async (req, res) => {
   }
 });
 
-
-
-// Route pour la connexion des utilisateurs
 app.post("/connexion", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // 1. Vérification enseignant
     const [enseignants] = await pool.query(
       "SELECT CIN, Email, Password FROM enseignants WHERE Email = ?", 
       [email]
@@ -171,7 +158,6 @@ app.post("/connexion", async (req, res) => {
       }
     }
 
-    // 2. Vérification étudiant
     const [etudiants] = await pool.query(
       "SELECT CIN, email, Password FROM etudiant WHERE email = ?", 
       [email]
@@ -202,7 +188,6 @@ app.post("/connexion", async (req, res) => {
       }
     }
 
-    // 3. Si aucun utilisateur trouvé ou mot de passe incorrect
     return res.status(401).json({ 
       success: false,
       message: "Email ou mot de passe incorrect" 
@@ -235,7 +220,6 @@ app.post("/enseignants", async (req, res) => {
     Description 
   } = req.body;
 
-  // Validation des données
   const errors = {};
   const passwordFeedback = {
     requirements: {
@@ -248,33 +232,28 @@ app.post("/enseignants", async (req, res) => {
     strength: 0
   };
 
-  // Validation du CIN
   if (!Cin) {
     errors.Cin = "Le CIN est requis.";
   } else if (!/^[01]\d{7}$/.test(Cin)) {
     errors.Cin = "Le CIN doit contenir exactement 8 chiffres commençant par 0 ou 1.";
   }
 
-  // Validation du nom
   if (!Nom_et_prénom?.trim()) {
     errors.Nom_et_prénom = "Le nom est requis.";
   }
 
-  // Validation de l'email
   if (!Email?.trim()) {
     errors.email = "L'email est requis.";
   } else if (!/\S+@\S+\.\S+/.test(Email)) {
     errors.email = "L'email est invalide.";
   }
 
-  // Validation du téléphone
   if (!Numero_tel) {
     errors.Numero_tel = "Le numéro de téléphone est requis.";
   } else if (!/^\d{8}$/.test(Numero_tel)) {
     errors.Numero_tel = "Le numéro doit contenir exactement 8 chiffres.";
   }
 
-  // Validation du mot de passe
   if (!Password) {
     errors.password = "Le mot de passe est requis.";
   } else {
@@ -292,12 +271,10 @@ app.post("/enseignants", async (req, res) => {
     }
   }
 
-  // Validation du classement
   if (!Classement?.trim()) {
     errors.Classement = "Le classement est requis.";
   }
 
-  // Validation de la description
   if (!Description?.trim()) {
     errors.Description = "La description est requise.";
   }
@@ -311,7 +288,6 @@ app.post("/enseignants", async (req, res) => {
   }
 
   try {
-    // Vérification des doublons
     const [existing] = await pool.query(
       "SELECT * FROM enseignants WHERE Cin = ? OR Email = ?",
       [Cin, Email]
@@ -324,11 +300,9 @@ app.post("/enseignants", async (req, res) => {
       });
     }
 
-    // Hashage du mot de passe
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
-    // Insertion dans la base de données
     await pool.query(
       `INSERT INTO enseignants 
       (Cin, Nom_et_prénom, Email, Numero_tel, Password, Classement, Description) 
@@ -368,16 +342,13 @@ app.post("/etudiant", async (req, res) => {
     email, 
     password, 
     confirmPassword,
-    filiere,  // Notez le nom sans accent
+    filiere,  
     classe
   } = req.body;
 
-  // Validation de base
   const errors = {};
   if (!Cin) errors.Cin = "Le CIN est requis";
   if (!Nom_et_prénom) errors.Nom_et_prénom = "Le nom est requis";
-  // Ajoutez les autres validations...
-
   if (Object.keys(errors).length > 0) {
     return res.status(400).json({
       success: false,
@@ -386,7 +357,6 @@ app.post("/etudiant", async (req, res) => {
   }
 
   try {
-    // Vérifiez si l'étudiant existe déjà
     const [existing] = await pool.query(
       "SELECT * FROM etudiant WHERE Cin = ? OR email = ?",
       [Cin, email]
@@ -399,11 +369,9 @@ app.post("/etudiant", async (req, res) => {
       });
     }
 
-    // Hashage du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
     const hashedConfirmPassword = await bcrypt.hash(confirmPassword, 10);
 
-    // Insertion dans la base
     await pool.query(
       `INSERT INTO etudiant 
       (Cin, Nom_et_prénom, Téléphone, email, password, Confirmpassword, Filière, Classe) 
@@ -425,8 +393,6 @@ app.post("/etudiant", async (req, res) => {
   }
 });
 
-
-// Route pour afficher tous les utilisateurs
 app.get("/api/utilisateurs", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT * FROM vue_utilisateurs");
@@ -437,7 +403,6 @@ app.get("/api/utilisateurs", async (req, res) => {
   }
 });
 
-// Route pour supprimer un utilisateur
 app.delete('/api/utilisateurs/:cin', async (req, res) => {
   const { cin } = req.params;
   const { role } = req.query;
@@ -458,7 +423,6 @@ app.delete('/api/utilisateurs/:cin', async (req, res) => {
   }
 });
 
-// Route pour modifier un utilisateur
 app.put("/api/utilisateurs/:cin", async (req, res) => {
   const { cin } = req.params;
   const { nom, email, formation, role } = req.body;
@@ -482,19 +446,11 @@ app.put("/api/utilisateurs/:cin", async (req, res) => {
   }
 });
 
-
-
-
-
-// Route pour enregistrer un participant
-// Route pour enregistrer un participant
 app.post('/api/register', async (req, res) => {
   console.log('Données reçues:', req.body);
   
   try {
     const { nom, cin, email, tele, sexe, niveauEtude } = req.body;
-
-    // Validation améliorée
     const errors = [];
     if (!nom?.trim()) errors.push('Le nom est requis');
     if (!cin) errors.push('Le CIN est requis');
@@ -510,8 +466,6 @@ app.post('/api/register', async (req, res) => {
         errors
       });
     }
-
-    // Conversion des types
     const connection = await pool.getConnection();
     
     try {
@@ -553,9 +507,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Middleware d'authentification amélioré
-// Middleware d'authentification générique
-// Middleware d'authentification générique
 const authenticate = (allowedRoles) => async (req, res, next) => {
   const authHeader = req.headers.authorization;
   
@@ -567,8 +518,6 @@ const authenticate = (allowedRoles) => async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Vérification du rôle
     if (!allowedRoles.includes(decoded.role)) {
       return res.status(403).json({ 
         success: false,
@@ -576,7 +525,6 @@ const authenticate = (allowedRoles) => async (req, res, next) => {
       });
     }
 
-    // Vérification en base de données
     let user;
     switch(decoded.role) {
       case 'admin':
@@ -625,27 +573,21 @@ const authenticatee = (allowedRoles) => async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    // Utilisez la même clé secrète que pour la génération
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-only');
     
-    // Vérification du rôle
     if (!allowedRoles.includes(decoded.role)) {
       return res.status(403).json({ 
         success: false,
         message: "Accès non autorisé pour ce rôle" 
       });
     }
-
-    // Ajoutez les infos décodées à la requête
     req.user = decoded;
     next();
   } catch (error) {
     console.error("Erreur de vérification du token:", error.message);
-    
     let message = "Token invalide";
     if (error.name === 'TokenExpiredError') message = "Session expirée";
     if (error.name === 'JsonWebTokenError') message = "Token malformé";
-    
     res.status(401).json({ 
       success: false, 
       message 
@@ -653,18 +595,13 @@ const authenticatee = (allowedRoles) => async (req, res, next) => {
   }
 };
 
-
-// Middleware spécifique pour les agents
 const authenticateAgent = (allowedRoles = ['Agent', 'Superviseur', 'Administrateur']) => {
   return authenticate(allowedRoles);
 };
-// Middlewares spécifiques par rôle
+
 const authenticateAdmin = authenticate(['admin']);
 const authenticateTeacher = authenticate(['enseignant']);
 const authenticateStudent = authenticate(['etudiant']);
-
-
-
 
 app.get("/api/enseignants", authenticate(['enseignant']), async (req, res) => {
   try {
@@ -700,7 +637,6 @@ app.get("/api/enseignants", authenticate(['enseignant']), async (req, res) => {
       success: true,
       data: {
         ...results[0],
-        // Assurez-vous que le chemin est complet
         ProfileImage: results[0].ProfileImage 
           ? `http://localhost:5000${results[0].ProfileImage}`
           : null
@@ -717,11 +653,6 @@ app.get("/api/enseignants", authenticate(['enseignant']), async (req, res) => {
   }
 });
 
-
-
-
-
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -735,7 +666,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 2 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     if (file.mimetype.match(/^image\/(jpeg|png|jpg)$/)) {
       cb(null, true);
@@ -745,36 +676,31 @@ const upload = multer({
   }
 });
 
-
-// 1. Configuration du stockage des images
 const profileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, 'uploads/profiles');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); // Crée le dossier si inexistant
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); 
     cb(null, dir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const uniqueName = `profile-${Date.now()}${ext}`;
-    cb(null, uniqueName); // Ex: "profile-1623456789.png"
+    cb(null, uniqueName); 
   }
 });
 
-// 2. Middleware Multer
 const uploadProfile = multer({
   storage: profileStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  limits: { fileSize: 2 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     if (file.mimetype.match(/^image\/(jpeg|png|jpg)$/)) {
-      cb(null, true); // Accepte l'image
+      cb(null, true); 
     } else {
       cb(new Error('Seules les images (JPEG/PNG) sont autorisées !'), false);
     }
   }
 });
 
-
-// Configuration for schedule files (emploi du temps)
 const scheduleStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, "uploads", "emplois");
@@ -792,7 +718,7 @@ const scheduleStorage = multer.diskStorage({
 
 const uploadSchedule = multer({
   storage: scheduleStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf',
@@ -807,7 +733,6 @@ const uploadSchedule = multer({
   }
 });
 
-
 const uploadDirs = [
   path.join(__dirname, 'uploads', 'profiles'),
   path.join(__dirname, 'uploads', 'documents'),
@@ -820,12 +745,8 @@ uploadDirs.forEach(dir => {
   }
 });
 
-
 app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
-
-// Emploi du temps enseignant publié + parsing
 app.get('/api/emplois/enseignant/:cin', async (req, res) => {
   try {
     const { cin } = req.params;
@@ -873,16 +794,11 @@ app.get('/api/emplois/:id/parsed', async (req, res) => {
   }
 });
 
-
-
-
-// Ajouter un nouvel emploi du temps
 app.post("/api/emplois", uploadSchedule.single("fichier"), async (req, res) => {
   try {
     const { type, enseignant_id } = req.body;
     const fichier_path = req.file ? `/uploads/emplois/${req.file.filename}` : null;
 
-    // Validation spécifique au type
     if (type === 'enseignant') {
       if (!enseignant_id || !fichier_path) {
         return res.status(400).json({
@@ -900,7 +816,6 @@ app.post("/api/emplois", uploadSchedule.single("fichier"), async (req, res) => {
       }
     }
 
-    // Requête SQL conditionnelle
     const [result] = await pool.query(
       `INSERT INTO emplois_du_temps 
       (type, fichier_path, enseignant_id, filiere_id, classe_id, semestre_id) 
@@ -925,7 +840,6 @@ app.post("/api/emplois", uploadSchedule.single("fichier"), async (req, res) => {
   }
 });
 
-// Récupérer les emplois publiés par classe et type
 app.get("/api/emplois/classe/:classeNom", async (req, res) => {
   try {
     const { classeNom } = req.params;
@@ -960,10 +874,6 @@ app.get("/api/emplois/classe/:classeNom", async (req, res) => {
   }
 });
 
-
-// Publier un emploi du temps
-// Publier un emploi du temps
-// Route PUT pour publier un emploi du temps
 app.put("/api/emplois/:id/publish", async (req, res) => {
     try {
     const [result] = await pool.query(
@@ -993,7 +903,6 @@ app.put("/api/emplois/:id/publish", async (req, res) => {
   }
 });
 
-// Télécharger un emploi du temps
 app.get("/api/emplois/:id/download", async (req, res) => {
   try {
     const { id } = req.params;
@@ -1023,7 +932,6 @@ app.get("/api/emplois/:id/download", async (req, res) => {
   }
 });
 
-// Routes pour les données de référence
 app.get("/api/filieres", async (req, res) => {
   try {
     const [filieres] = await pool.query("SELECT * FROM filieres ORDER BY nom");
@@ -1061,8 +969,6 @@ app.get("/api/classes", async (req, res) => {
   }
 });
 
-// Dans votre backend (server.js)
-// Update the semesters endpoint to filter by class_id
 app.get('/api/semestres', async (req, res) => {
   try {
     const { classe_id } = req.query;
@@ -1086,8 +992,6 @@ app.get('/api/semestres', async (req, res) => {
 });
 
 app.use("/uploads", express.static(uploadDir));
-
-// Middleware pour les erreurs
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -1097,16 +1001,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-
-
-
-// Route pour l'emploi du temps de l'étudiant
-app.get("/api/etudiant/:cin/emploi-du-temps", async (req, res) => {
-  // Implémentation similaire à la route précédente
-});
-
-
-
+app.get("/api/etudiant/:cin/emploi-du-temps", async (req, res) => {});
 
 app.get('/api/teachers/profile',  authenticate(['enseignant']), async (req, res) => {
   try {
@@ -1126,9 +1021,7 @@ app.get('/api/teachers/profile',  authenticate(['enseignant']), async (req, res)
   }
 });
 
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// Route pour l'upload
 app.post('/api/teachers/upload-profile', upload.single('profile'), async (req, res) => {
   try {
     if (!req.file) {
@@ -1156,16 +1049,11 @@ app.post('/api/teachers/upload-profile', upload.single('profile'), async (req, r
   }
 });
 
-// Route pour l'inscription des étudiants
 app.post('/api/etudiant', (req, res) => {
-  
-  // Traitement de l'inscription
   console.log(req.body);
   res.status(201).json({ message: "Inscription réussie" });
 });
 
-// Route pour récupérer les données d'un étudiant
-// Dans server.js (backend)
 app.get("/api/etudiant/:cin", async (req, res) => {
   const { cin } = req.params;
   try {
@@ -1199,7 +1087,6 @@ app.get("/api/etudiant/:cin", async (req, res) => {
       success: true,
       data: {
         ...etudiant[0],
-        // Utilisez les noms complets pour l'affichage
         Filière: etudiant[0].filiere_nom || etudiant[0].filiere_id,
         Classe: etudiant[0].classe_nom || etudiant[0].classe_id,
       },
@@ -1210,15 +1097,9 @@ app.get("/api/etudiant/:cin", async (req, res) => {
   }
 });
 
-
-
-
-
-
-// Route pour l'upload des photos étudiants
 app.post('/api/etudiant/upload-profile',
-  authenticate(['etudiant']), // Middleware d'authentification
-  uploadProfile.single('profile'), // 'profile' = nom du champ dans FormData
+  authenticate(['etudiant']), 
+  uploadProfile.single('profile'), 
   async (req, res) => {
     try {
       if (!req.file) {
@@ -1228,11 +1109,8 @@ app.post('/api/etudiant/upload-profile',
       const token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const cin = decoded.cin;
-
-      // Chemin relatif (ex: "/uploads/profiles/profile-123456789.png")
       const imagePath = `/uploads/profiles/${req.file.filename}`;
 
-      // Mise à jour en base de données
       await pool.query(
         'UPDATE etudiant SET ProfileImage = ? WHERE CIN = ?',
         [imagePath, cin]
@@ -1240,7 +1118,7 @@ app.post('/api/etudiant/upload-profile',
 
       res.json({
         success: true,
-        imageUrl: imagePath // Renvoie le chemin pour affichage immédiat
+        imageUrl: imagePath 
       });
 
     } catch (error) {
@@ -1254,19 +1132,8 @@ app.post('/api/etudiant/upload-profile',
   }
 );
 
-
-
-
-
-
-
-// Middleware essentiels
-app.use(bodyParser.json()); // Pour parser le JSON
-app.use(bodyParser.urlencoded({ extended: true })); // Pour parser les formulaires
-
-
-////////filière 
-
+app.use(bodyParser.json()); 
+app.use(bodyParser.urlencoded({ extended: true })); 
 
 app.post('/api/filieres', async (req, res) => {
   try {
@@ -1293,7 +1160,6 @@ app.post('/api/filieres', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la création de la filière:', error);
     
-    // Gestion spécifique des erreurs de doublon
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({
         success: false,
@@ -1308,12 +1174,6 @@ app.post('/api/filieres', async (req, res) => {
     });
   }
 });
-
-
-
-
-;
-
 
 app.put('/api/filieres/:id', async (req, res) => {
   try {
@@ -1340,7 +1200,6 @@ app.put('/api/filieres/:id', async (req, res) => {
   }
 });
 
-
 app.delete('/api/filieres/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1357,7 +1216,6 @@ app.delete('/api/filieres/:id', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la suppression de la filière:', error);
     
-    // Gestion spécifique des contraintes de clé étrangère
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
       return res.status(400).json({ 
         error: 'Impossible de supprimer : des classes sont associées à cette filière' 
@@ -1368,22 +1226,16 @@ app.delete('/api/filieres/:id', async (req, res) => {
   }
 });
 
-/////classes
-// Routes pour les classes
-// Route POST pour ajouter une classe
 app.post('/api/classes', async (req, res) => {
   try {
     const { nom, filiere_id } = req.body;
 
-    // Validation
     if (!nom || !filiere_id) {
       return res.status(400).json({ 
         success: false,
         error: 'Le nom et l\'ID de la filière sont requis' 
       });
     }
-
-    // Insertion dans la base de données
     const [result] = await pool.query(
       'INSERT INTO classes (nom, filiere_id) VALUES (?, ?)',
       [nom, filiere_id]
@@ -1408,9 +1260,6 @@ app.post('/api/classes', async (req, res) => {
   }
 });
 
-
-
-// Testez la connexion au démarrage
 pool.getConnection((err, connection) => {
   if (err) {
     console.error('Erreur de connexion à la base de données:', err);
@@ -1420,8 +1269,6 @@ pool.getConnection((err, connection) => {
   }
 });
 
-
-// Récupérer toutes les classes
 app.get('/api/classes', async (req, res) => {
   try {
     const [classes] = await pool.query(`
@@ -1436,18 +1283,14 @@ app.get('/api/classes', async (req, res) => {
   }
 });
 
-// Dans server.js ou votre fichier de routes
 app.put('/api/classes/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { nom, filiere_id } = req.body;
 
-    // Validation
     if (!nom || !filiere_id) {
       return res.status(400).json({ error: 'Nom et filière sont requis' });
     }
-
-    // Mise à jour dans la base de données
     const [result] = await pool.query(
       'UPDATE classes SET nom = ?, filiere_id = ? WHERE id = ?',
       [nom, filiere_id, id]
@@ -1464,13 +1307,10 @@ app.put('/api/classes/:id', async (req, res) => {
   }
 });
 
-// Route DELETE pour supprimer une classe
-// Route DELETE pour supprimer une classe
 app.delete('/api/classes/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // 1. Vérifier si la classe existe
+   
     const [classe] = await pool.query('SELECT id FROM classes WHERE id = ?', [id]);
     if (!classe.length) {
       return res.status(404).json({ 
@@ -1478,8 +1318,6 @@ app.delete('/api/classes/:id', async (req, res) => {
         message: 'Classe non trouvée' 
       });
     }
-
-    // 2. Suppression effective
     await pool.query('DELETE FROM classes WHERE id = ?', [id]);
     
     res.json({ 
@@ -1489,8 +1327,6 @@ app.delete('/api/classes/:id', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur suppression:', error);
-    
-    // Gestion des contraintes de clé étrangère
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
       return res.status(400).json({
         success: false,
@@ -1505,8 +1341,6 @@ app.delete('/api/classes/:id', async (req, res) => {
   }
 });
 
-
-// Récupérer les classes d'une filière spécifique
 app.get('/api/filieres/:filiereId/classes', async (req, res) => {
   try {
     const [classes] = await pool.query(
@@ -1578,22 +1412,15 @@ app.get('/api/classes/:classeId/matieres', async (req, res) => {
   }
 });
 
-///semestres
-// Route POST pour créer un semestre
-// Route POST pour créer un semestre
 app.post('/api/semestres', async (req, res) => {
   try {
     const { numero, classe_id } = req.body;
-
-    // Validation
     if (!numero || !classe_id) {
       return res.status(400).json({
         success: false,
         message: 'Le numéro et la classe sont obligatoires'
       });
     }
-
-    // Vérifier si la classe existe
     const [classe] = await pool.query(
       'SELECT id FROM classes WHERE id = ?', 
       [classe_id]
@@ -1605,8 +1432,6 @@ app.post('/api/semestres', async (req, res) => {
         message: 'Classe non trouvée'
       });
     }
-
-    // Création du semestre
     const [result] = await pool.query(
       'INSERT INTO semestres (numero, classe_id) VALUES (?, ?)',
       [numero, classe_id]
@@ -1638,23 +1463,6 @@ app.post('/api/semestres', async (req, res) => {
   }
 });
 
-
-// Récupérer tous les semestres avec leur classe
-{/*app.get('/api/semestres', async (req, res) => {
-  try {
-    const [semestres] = await pool.query(`
-      SELECT s.id, s.numero, c.nom as classe_nom, c.id as classe_id
-      FROM semestres s
-      JOIN classes c ON s.classe_id = c.id
-    `);
-    res.json(semestres);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});*/}
-
-// Récupérer les semestres d'une classe spécifique
 app.get('/api/classes/:classeId/semestres', async (req, res) => {
   try {
     const [semestres] = await pool.query(
@@ -1668,22 +1476,14 @@ app.get('/api/classes/:classeId/semestres', async (req, res) => {
   }
 });
 
-
-
-
-// Route DELETE pour supprimer un semestre
-// Route DELETE pour supprimer un semestre
 app.delete('/api/semestres/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Vérifier si le semestre existe
     const [semestre] = await pool.query('SELECT id FROM semestres WHERE id = ?', [id]);
     if (!semestre.length) {
       return res.status(404).json({ success: false, message: "Semestre non trouvé" });
     }
-
-    // 2. Supprimer le semestre
     await pool.query('DELETE FROM semestres WHERE id = ?', [id]);
 
     res.json({ success: true, message: "Semestre supprimé avec succès" });
@@ -1693,14 +1493,10 @@ app.delete('/api/semestres/:id', async (req, res) => {
   }
 });
 
-//////matieres 
-// Route POST pour créer une matière
-// Route POST pour créer une matière
 app.post('/api/matieres', async (req, res) => {
   try {
     const { nom, credits, enseignant_id, semestre_id } = req.body;
 
-    // Validation
     if (!nom || !semestre_id) {
       return res.status(400).json({
         success: false,
@@ -1708,7 +1504,6 @@ app.post('/api/matieres', async (req, res) => {
       });
     }
 
-    // Vérifier si le semestre existe
     const [semestre] = await pool.query(
       'SELECT id FROM semestres WHERE id = ?',
       [semestre_id]
@@ -1721,7 +1516,6 @@ app.post('/api/matieres', async (req, res) => {
       });
     }
 
-    // Vérifier si l'enseignant existe (si renseigné)
     if (enseignant_id) {
       const [enseignant] = await pool.query(
         'SELECT Cin FROM enseignants WHERE Cin = ?',
@@ -1736,7 +1530,6 @@ app.post('/api/matieres', async (req, res) => {
       }
     }
 
-    // Insertion
     const [result] = await pool.query(
       'INSERT INTO matieres (nom, credits, enseignant_id, semestre_id) VALUES (?, ?, ?, ?)',
       [nom, credits, enseignant_id, semestre_id]
@@ -1767,7 +1560,6 @@ app.post('/api/matieres', async (req, res) => {
   }
 });
 
-// Route GET pour récupérer toutes les matières
 app.get('/api/matieres', async (req, res) => {
   try {
     const [matieres] = await pool.query(`
@@ -1798,13 +1590,12 @@ app.get('/api/matieres', async (req, res) => {
     });
   }
 });
-// Route PUT pour modifier une matière
+
 app.put('/api/matieres/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { nom, credits, enseignant_id, semestre_id } = req.body;
 
-    // Validation
     if (!nom || !semestre_id) {
       return res.status(400).json({
         success: false,
@@ -1812,7 +1603,6 @@ app.put('/api/matieres/:id', async (req, res) => {
       });
     }
 
-    // Vérifier si la matière existe
     const [matiere] = await pool.query(
       'SELECT id FROM matieres WHERE id = ?',
       [id]
@@ -1825,7 +1615,6 @@ app.put('/api/matieres/:id', async (req, res) => {
       });
     }
 
-    // Vérifier le semestre
     const [semestre] = await pool.query(
       'SELECT id FROM semestres WHERE id = ?',
       [semestre_id]
@@ -1838,7 +1627,6 @@ app.put('/api/matieres/:id', async (req, res) => {
       });
     }
 
-    // Vérifier l'enseignant si renseigné
     if (enseignant_id) {
       const [enseignant] = await pool.query(
         'SELECT Cin FROM enseignants WHERE Cin = ?',
@@ -1853,7 +1641,6 @@ app.put('/api/matieres/:id', async (req, res) => {
       }
     }
 
-    // Mise à jour
     await pool.query(
       'UPDATE matieres SET nom = ?, credits = ?, enseignant_id = ?, semestre_id = ? WHERE id = ?',
       [nom, credits, enseignant_id, semestre_id, id]
@@ -1881,13 +1668,9 @@ app.put('/api/matieres/:id', async (req, res) => {
   }
 });
 
-
-// Route DELETE pour supprimer une matière
 app.delete('/api/matieres/:id', async (req, res) => {
   try {
     const { id } = req.params;
-
-    // 1. Vérifier si la matière existe
     const [matiere] = await pool.query(
       'SELECT id FROM matieres WHERE id = ?',
       [id]
@@ -1900,7 +1683,6 @@ app.delete('/api/matieres/:id', async (req, res) => {
       });
     }
 
-    // 2. Suppression effective
     await pool.query(
       'DELETE FROM matieres WHERE id = ?',
       [id]
@@ -1913,8 +1695,6 @@ app.delete('/api/matieres/:id', async (req, res) => {
 
   } catch (error) {
     console.error('Erreur suppression matière:', error);
-    
-    // Gestion des contraintes de clé étrangère
     if (error.code === 'ER_ROW_IS_REFERENCED_2') {
       return res.status(400).json({
         success: false,
@@ -1930,8 +1710,6 @@ app.delete('/api/matieres/:id', async (req, res) => {
 });
 
 
-
-// Route POST pour créer un événement
 app.post('/api/evenements', async (req, res) => {
   try {
     const { titre, date, lieu, type, description } = req.body;
@@ -1954,7 +1732,6 @@ app.post('/api/evenements', async (req, res) => {
     const createdAt = new Date();
     const message = `Nouvel événement "${titre}" prévu le ${eventDate.toLocaleDateString()} à ${lieu}`;
 
-    //  Créer une notification pour enseignants et étudiants
     const notifications = [
       [null, 'enseignants', 'evenement', message, eventId, createdAt],
       [null, 'etudiants', 'evenement', message, eventId, createdAt]
@@ -1965,7 +1742,6 @@ app.post('/api/evenements', async (req, res) => {
       [notifications]
     );
 
-    // 📡 Socket.IO : notifier les deux groupes
     io.to("enseignants").emit("newNotification", {
       audience: "enseignants",
       type: "evenement",
@@ -2003,8 +1779,6 @@ app.post('/api/evenements', async (req, res) => {
   }
 });
 
-
-// Route GET pour récupérer tous les événements
 app.get('/api/evenements', async (req, res) => {
   try {
     const [evenements] = await pool.query(
@@ -2017,14 +1791,11 @@ app.get('/api/evenements', async (req, res) => {
   }
 });
 
-
-// Route PUT pour modifier un événement
 app.put('/api/evenements/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { titre, date, lieu, type, description } = req.body;
 
-    // Validation
     if (!titre || !date || !lieu || !type) {
       return res.status(400).json({
         success: false,
@@ -2058,14 +1829,10 @@ app.put('/api/evenements/:id', async (req, res) => {
   }
 });
 
-
-
-// Dans votre fichier server.js
 app.get('/api/classes', async (req, res) => {
   try {
     const { filiere } = req.query;
 
-    // Validation du paramètre
     if (!filiere || isNaN(filiere)) {
       return res.status(400).json({
         success: false,
@@ -2073,7 +1840,6 @@ app.get('/api/classes', async (req, res) => {
       });
     }
 
-    // Requête SQL avec jointure pour vérifier l'existence de la filière
     const [classes] = await pool.query(`
       SELECT c.id, c.nom 
       FROM classes c
@@ -2097,12 +1863,9 @@ app.get('/api/classes', async (req, res) => {
 });
 
 
-// Route pour récupérer les documents d'un étudiant
 app.get('/api/student-documents', authenticateStudent, async (req, res) => {
   try {
     const { filiere, classe } = req.query;
-    
-    // 1. Récupérer les matières de la filière et classe
     const [subjects] = await pool.query(`
       SELECT m.id, m.nom, s.numero AS semestre
       FROM matieres m
@@ -2112,7 +1875,6 @@ app.get('/api/student-documents', authenticateStudent, async (req, res) => {
       WHERE f.nom = ? AND c.nom = ?
     `, [filiere, classe]);
 
-    // 2. Récupérer les documents associés
     const [documents] = await pool.query(`
      SELECT d.id, d.title, d.file_name, d.diffusion_date AS date, 
        d.file_size AS size, d.file_type AS type, d.matiere_id,
@@ -2131,7 +1893,7 @@ WHERE f.nom IS NULL AND c.nom IS NULL;
       subjects,
       documents: documents.map(doc => ({
         ...doc,
-        viewed: false // Vous pourriez suivre les vues dans la base
+        viewed: false 
       }))
     });
   } catch (error) {
@@ -2140,11 +1902,6 @@ WHERE f.nom IS NULL AND c.nom IS NULL;
   }
 });
 
-// Middleware d'authentification étudiant
-
-
-
-// Configuration du modèle Emploi
 const getEmplois = async () => {
   try {
     const [emplois] = await pool.query(`
@@ -2164,13 +1921,6 @@ const getEmplois = async () => {
   }
 };
 
-
-
-
-
-
-
-// Route pour télécharger un document
 app.get("/api/documents/:id/download", async (req, res) => {
   try {
     const { id } = req.params;
@@ -2205,20 +1955,15 @@ app.get("/api/documents/:id/download", async (req, res) => {
   }
 });
 
-// Route pour récupérer les cours par filière et classe
 app.get("/api/cours-etudiant", authenticate(['etudiant']), async (req, res) => {
   try {
     const { filiere, classe } = req.query;
-
-    // Validation des paramètres
     if (!filiere || !classe) {
       return res.status(400).json({
         success: false,
         message: "Les paramètres 'filiere' et 'classe' sont requis"
       });
     }
-
-    // 1. Récupérer l'ID de la classe
     const [classeData] = await pool.query(
       "SELECT id FROM classes WHERE nom = ? LIMIT 1",
       [classe]
@@ -2233,13 +1978,10 @@ app.get("/api/cours-etudiant", authenticate(['etudiant']), async (req, res) => {
 
     const classeId = classeData[0].id;
 
-    // 2. Récupérer les semestres de cette classe
     const [semestres] = await pool.query(
       "SELECT id, numero FROM semestres WHERE classe_id = ?",
       [classeId]
     );
-
-    // 3. Pour chaque semestre, récupérer les matières
     const result = await Promise.all(
       semestres.map(async (semestre) => {
         const [matieres] = await pool.query(
@@ -2271,8 +2013,6 @@ app.get("/api/cours-etudiant", authenticate(['etudiant']), async (req, res) => {
   }
 });
 
-
-// GET /api/filieres
 router.get('/filieres', async (req, res) => {
   try {
     const [filieres] = await connection.query('SELECT * FROM filieres');
@@ -2281,7 +2021,7 @@ router.get('/filieres', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-// GET /api/classes
+
 router.get('/classes', async (req, res) => {$
   try {
     const [classes] = await connection.query('SELECT * FROM classes');
@@ -2290,7 +2030,7 @@ router.get('/classes', async (req, res) => {$
     res.status(500).json({ message: err.message });
   }
 });
-// Dans votre backend (Node.js/Express)
+
 router.get('/semestres', async (req, res) => {
   try {
     const semestres = await db.query(`
@@ -2304,7 +2044,6 @@ router.get('/semestres', async (req, res) => {
   }
 });
 
-
 router.get('/filieres/:filiereId/classes', async (req, res) => {
   try {
     const classes = await db.query(
@@ -2317,7 +2056,6 @@ router.get('/filieres/:filiereId/classes', async (req, res) => {
   }
 });
 
-// Exemple correct dans une route
 app.get('/api/test-filieres', async (req, res) => {
   try {
     const response = await axios.get('http://localhost:3001/api/filieres');
@@ -2342,11 +2080,11 @@ app.get("/api/emplois", async (req, res) => {
       ORDER BY e.created_at DESC
     `);
 
-    console.log("Emplois récupérés:", emplois); // Log pour débogage
+    console.log("Emplois récupérés:", emplois); 
     
     res.json({
       success: true,
-      data: emplois // Assurez-vous que c'est bien 'data' et non 'emplois'
+      data: emplois 
     });
   } catch (error) {
     console.error("Erreur:", error);
@@ -2357,9 +2095,6 @@ app.get("/api/emplois", async (req, res) => {
   }
 });
 
-
-
-// Supprimez tout le middleware d'authentification et modifiez la route comme suit :
 app.get("/api/teaching-data", async (req, res) => {
   try {
     const [filieres] = await pool.query(
@@ -2395,10 +2130,6 @@ app.get("/api/teaching-data", async (req, res) => {
   }
 });
 
-
-
-
-// Configuration Multer pour les documents
 const documentsDir = path.join(__dirname, 'uploads', 'documents');
 if (!fs.existsSync(documentsDir)) {
   fs.mkdirSync(documentsDir, { recursive: true });
@@ -2417,16 +2148,16 @@ const documentStorage = multer.diskStorage({
 
 const uploadDocument = multer({
   storage: documentStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf',
-      'application/msword', // .doc
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-      'application/vnd.ms-excel', // .xls
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-      'application/vnd.ms-powerpoint', // .ppt
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation' // .pptx
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+      'application/vnd.ms-excel', 
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+      'application/vnd.ms-powerpoint', 
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation' 
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
@@ -2452,7 +2183,6 @@ fileFilter: (req, file, cb) => {
   }
 }
 
-// Route corrigée
 app.post("/api/diffuseCours", uploadDocument.single('file'), async (req, res) => {
   try {
     const { 
@@ -2464,7 +2194,6 @@ app.post("/api/diffuseCours", uploadDocument.single('file'), async (req, res) =>
       date_diffusion 
     } = req.body;
 
-    // Validation des champs obligatoires
     const requiredFields = {
       title: 'Titre',
       enseignant_id: 'ID Enseignant',
@@ -2493,7 +2222,6 @@ app.post("/api/diffuseCours", uploadDocument.single('file'), async (req, res) =>
       });
     }
 
-    // Vérification des relations
     const [enseignant] = await pool.query('SELECT CIN FROM enseignants WHERE CIN = ?', [enseignant_id]);
     if (!enseignant.length) {
       return res.status(400).json({
@@ -2526,10 +2254,7 @@ app.post("/api/diffuseCours", uploadDocument.single('file'), async (req, res) =>
       });
     }
 
-    // Chemin relatif pour la base de données
     const filePath = path.join('/uploads/documents', req.file.filename).replace(/\\/g, '/');
-
-    // Insertion dans la base de données
     const [result] = await pool.query(
       `INSERT INTO documents 
       (title, enseignant_id, filiere_id, classe_id, matiere_id, diffusion_date, file_path, file_name) 
@@ -2555,12 +2280,9 @@ app.post("/api/diffuseCours", uploadDocument.single('file'), async (req, res) =>
 
   } catch (error) {
     console.error("Erreur dans /api/diffuseCours:", error);
-    
-    // Supprimer le fichier uploadé en cas d'erreur
     if (req.file) {
       fs.unlink(req.file.path, () => {});
     }
-
     res.status(500).json({
       success: false,
       message: process.env.NODE_ENV === 'development' 
@@ -2602,11 +2324,6 @@ app.get('/api/documentsMatiere', async (req, res) => {
   }
 });
 
-
-
-
-
-// Route pour récupérer les documents d'un enseignant
 app.get(
   "/api/teacher-documents",
   authenticate(["enseignant"]),
@@ -2650,8 +2367,6 @@ app.get('/api/filieres', async (req, res) => {
   }
 });
 
-
-// Et pour les classes :
 app.get('/api/classes', async (req, res) => {
   try {
     const [classes] = await pool.query(`
@@ -2672,16 +2387,12 @@ app.get('/api/classes', async (req, res) => {
   }
 });
 
-
-
-
-// Corrigez la route pour retourner le bon format de données
 app.get('/api/enseignants/list', async (req, res) => {
   try {
     const [enseignants] = await pool.query('SELECT CIN, Nom_et_prénom FROM enseignants');
     res.json({ 
       success: true,
-      data: enseignants  // Assurez-vous de retourner un objet avec propriété data
+      data: enseignants  
     });
   } catch (error) {
     console.error('Erreur:', error);
@@ -2724,10 +2435,6 @@ app.get("/api/emplois/enseignant/:cin", authenticate(['enseignant']), async (req
   }
 });
 
-
-
-
-
 app.get('/api/emplois/enseignant/:cin/download', async (req, res) => {
   try {
     const { cin } = req.params;
@@ -2750,9 +2457,6 @@ app.get('/api/emplois/enseignant/:cin/download', async (req, res) => {
   }
 });
 
-
-
-// Route pour l'emploi du temps étudiant
 app.get("/api/etudiant/emplois", async (req, res) => {
   try {
     const { filiere, classe } = req.query;
@@ -2783,7 +2487,6 @@ app.get("/api/etudiant/emplois", async (req, res) => {
   }
 });
 
-// Dans votre fichier backend (ex: server.js)
 app.get('/api/emplois/:id/parsed', async (req, res) => {
   try {
     const { id } = req.params;
@@ -2813,8 +2516,6 @@ app.get('/api/emplois/:id/parsed', async (req, res) => {
   }
 });
 
-
-
 router.get('/auth/verify', authenticateAdmin, (req, res) => {
   res.json({ 
     valid: true,
@@ -2824,7 +2525,6 @@ router.get('/auth/verify', authenticateAdmin, (req, res) => {
     }
   });
 });
-
 
 app.get('/api/enseignants', async (req, res) => {
   try {
@@ -2844,12 +2544,10 @@ app.get('/api/enseignants', async (req, res) => {
   }
 });
 
-
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Admin login
     const [admin] = await pool.query("SELECT * FROM admin WHERE Email = ?", [email]);
     if (admin.length && password === admin[0].password) {
       const token = jwt.sign({ email, role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
@@ -2859,8 +2557,6 @@ app.post("/auth/login", async (req, res) => {
         user: { email, role: 'admin' }
       });
     }
-
-    // Agent login
     const [agent] = await pool.query("SELECT * FROM agents WHERE email = ?", [email]);
     if (agent.length && password === agent[0].password) {
       const user = agent[0];
@@ -2887,10 +2583,6 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-
-
-
-// Route pour créer un examen (admin seulement
 app.post('/api/examens',  async (req, res) => {
   try {
     const {
@@ -2906,7 +2598,6 @@ app.post('/api/examens',  async (req, res) => {
       type
     } = req.body;
 
-    // Validation des données
     if (!matiere_id || !filiere_id || !classe_id || !semestre_id || !date || 
         !heure_debut || !heure_fin || !salle || !type) {
       return res.status(400).json({ 
@@ -2914,8 +2605,6 @@ app.post('/api/examens',  async (req, res) => {
         message: 'Tous les champs obligatoires doivent être remplis' 
       });
     }
-
-    // Vérifier que la date est dans le futur
     const examDate = new Date(`${date}T${heure_debut}`);
     if (examDate < new Date()) {
       return res.status(400).json({ 
@@ -2923,8 +2612,6 @@ app.post('/api/examens',  async (req, res) => {
         message: 'La date et heure de l\'examen doivent être dans le futur' 
       });
     }
-
-    // Insertion dans la base de données
     const [result] = await pool.query(
       `INSERT INTO examens 
       (matiere_id, filiere_id, classe_id, semestre_id, date, heure_debut, heure_fin, salle, enseignant_id, type) 
@@ -2959,9 +2646,8 @@ app.post('/api/examens',  async (req, res) => {
   }
 });
 
-// Route pour lister tous les examens (admin seulement)
 app.get('/api/examens', async (req, res) => {
-  console.log("Reçu requête GET /api/examens"); // Log 1
+  console.log("Reçu requête GET /api/examens"); 
   
   try {
     const [rows] = await pool.query(`
@@ -2970,8 +2656,7 @@ app.get('/api/examens', async (req, res) => {
       LEFT JOIN matieres m ON e.matiere_id = m.id
     `);
     
-    console.log("Données récupérées:", rows); // Log 2
-    
+    console.log("Données récupérées:", rows); 
     res.json({
       success: true,
       data: rows,
@@ -2979,7 +2664,7 @@ app.get('/api/examens', async (req, res) => {
     });
     
   } catch (error) {
-    console.error("Erreur complète:", error); // Log 3
+    console.error("Erreur complète:", error); 
     res.status(500).json({
       success: false,
       message: "Échec de la récupération",
@@ -2988,59 +2673,6 @@ app.get('/api/examens', async (req, res) => {
   }
 });
 
-
-// GET /api/notifications
-app.get('/api/notifications', authenticate, async (req, res) => {
-  const { audience } = req.query;
-
-  try {
-    const [notifications] = await pool.query(`
-      SELECT * FROM notifications
-      WHERE (audience = ? OR audience = 'tous')
-      ORDER BY created_at DESC
-    `, [audience]);
-
-    res.json({ success: true, notifications });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Erreur serveur" });
-  }
-});
-
-// PATCH /api/notifications/:id/read
-app.patch('/api/notifications/:id/read', authenticate, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await pool.query(`
-      UPDATE notifications 
-      SET read_status = TRUE 
-      WHERE id = ?
-    `, [id]);
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Erreur serveur" });
-  }
-});
-
-// PUT /api/notifications/mark-as-read
-app.put('/api/notifications/mark-as-read', authenticate, async (req, res) => {
-  const { audience } = req.query;
-
-  try {
-    await pool.query(`
-      UPDATE notifications 
-      SET read_status = TRUE 
-      WHERE audience = ? OR audience = 'tous'
-    `, [audience]);
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Erreur serveur" });
-  }
-});
-
-// Route pour publier/diffuser un examen (admin seulement)
 app.put('/api/examens/:id/publish', async (req, res) => {
   try {
     const { id } = req.params;
@@ -3049,8 +2681,6 @@ app.put('/api/examens/:id/publish', async (req, res) => {
     if (!['enseignants', 'etudiants', 'tous'].includes(cible)) {
       return res.status(400).json({ success: false, message: 'Cible de diffusion invalide' });
     }
-
-    // Vérifier que l'examen existe
     const [examens] = await pool.query(`SELECT * FROM examens WHERE id = ?`, [id]);
 
     if (examens.length === 0) {
@@ -3059,7 +2689,6 @@ app.put('/api/examens/:id/publish', async (req, res) => {
 
     const examen = examens[0];
 
-    // Mise à jour de l'état de diffusion
     const updates = {
       diffusion_at: new Date(),
       diffusion_enseignants: (cible === 'enseignants' || cible === 'tous'),
@@ -3080,17 +2709,16 @@ app.put('/api/examens/:id/publish', async (req, res) => {
       ]
     );
 
-    // Préparation des notifications
     const notifications = [];
     const createdAt = new Date();
 
     if (updates.diffusion_enseignants) {
       notifications.push([
-        null,                  // user_id
-        'enseignants',         // ✅ audience
-        'examen',              // type
+        null,                  
+        'enseignants',         
+        'examen',              
         `Nouvel examen publié pour les enseignants le ${examen.date} à ${examen.heure_debut}`,
-        id,                    // reference_id
+        id,                    
         createdAt
       ]);
     }
@@ -3111,7 +2739,6 @@ app.put('/api/examens/:id/publish', async (req, res) => {
       created_at: new Date(),
     });
     
-    // Insertion des notifications si besoin
     if (notifications.length > 0) {
       await pool.query(
         `INSERT INTO notifications (user_id, audience, type, message, reference_id, created_at)
@@ -3139,9 +2766,6 @@ if (updates.diffusion_enseignants) {
   }
 });
 
-
-
-// Route pour modifier un examen (admin seulement)
 app.put('/api/examens/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3158,7 +2782,6 @@ app.put('/api/examens/:id', authenticateAdmin, async (req, res) => {
       type
     } = req.body;
 
-    // Vérifier que l'examen existe
     const [examen] = await pool.query('SELECT id FROM examens WHERE id = ?', [id]);
     if (!examen.length) {
       return res.status(404).json({ 
@@ -3167,7 +2790,6 @@ app.put('/api/examens/:id', authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Mise à jour dans la base de données
     const [result] = await pool.query(
       `UPDATE examens SET 
         matiere_id = ?,
@@ -3210,12 +2832,10 @@ app.put('/api/examens/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Route pour supprimer un examen (admin seulement)
 app.delete('/api/examens/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Vérifier que l'examen existe
     const [examen] = await pool.query('SELECT id FROM examens WHERE id = ?', [id]);
     if (!examen.length) {
       return res.status(404).json({ 
@@ -3224,7 +2844,6 @@ app.delete('/api/examens/:id', authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Suppression de la base de données
     await pool.query('DELETE FROM examens WHERE id = ?', [id]);
 
     res.json({ 
@@ -3241,7 +2860,6 @@ app.delete('/api/examens/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Route pour récupérer les examens diffusés aux enseignants
 app.get('/api/examens/enseignants', authenticate(['enseignant']), async (req, res) => {
   try {
     const [examens] = await pool.query(`
@@ -3274,10 +2892,8 @@ app.get('/api/examens/enseignants', authenticate(['enseignant']), async (req, re
   }
 });
 
-// Route pour récupérer les examens diffusés aux étudiants
 app.get('/api/examens/etudiants', authenticate(['etudiant']), async (req, res) => {
   try {
-    // Récupérer la filière et classe de l'étudiant
     const [etudiant] = await pool.query(
       'SELECT Filière AS filiere_id, Classe AS classe_id FROM etudiant WHERE CIN = ?',
       [req.user.cin]
@@ -3326,14 +2942,10 @@ app.get('/api/examens/etudiants', authenticate(['etudiant']), async (req, res) =
   }
 });
 
-
-
-
 app.get("/api/examens/etudiant/:cin", async (req, res) => {
   const { cin } = req.params;
   
   try {
-    // 1. Récupérer les infos de l'étudiant (filière et classe)
     const [etudiant] = await pool.query(
       `SELECT e.Filière AS filiere_id, e.Classe AS classe_id, 
               f.nom AS filiere_nom, c.nom AS classe_nom
@@ -3349,8 +2961,6 @@ app.get("/api/examens/etudiant/:cin", async (req, res) => {
     }
 
     const studentInfo = etudiant[0];
-    
-    // 2. Récupérer les examens pour cette filière et classe
     const [examens] = await pool.query(`
       SELECT e.*, 
              m.nom AS matiere_nom,
@@ -3385,11 +2995,6 @@ app.get("/api/examens/etudiant/:cin", async (req, res) => {
   }
 });
 
-
-
-
-
-// Route pour récupérer les examens d'un enseignant spécifique
 app.get('/api/examens/enseignant/:cin', authenticate(['enseignant']), async (req, res) => {
   try {
     const { cin } = req.params;
@@ -3424,41 +3029,6 @@ app.get('/api/examens/enseignant/:cin', authenticate(['enseignant']), async (req
   }
 });
 
-
-// ✅ Route pour récupérer les examens d'un étudiant
-{/*app.get("/api/examens/etudiant/:cin", async (req, res) => {
-  const { cin } = req.params;
-
-  try {
-    const [examens] = await pool.query(`
-      SELECT 
-        m.nom AS matiere_nom,
-        e.date_examen AS date,
-        e.heure_debut,
-        e.heure_fin,
-        e.salle,
-        e.type
-      FROM examens e
-      JOIN matieres m ON e.matiere_id = m.id
-      JOIN etudiant et ON et.CIN = ?
-      JOIN classes c ON c.nom = et.Classe
-      WHERE e.filiere_id = c.filiere_id
-        AND e.classe_id = c.id
-        AND e.diffusion_etudiants = 1
-    `, [cin]);
-
-    res.status(200).json({ success: true, data: examens });
-  } catch (error) {
-    console.error('Erreur récupération examens étudiant :', error);
-    res.status(500).json({ success: false, message: "Erreur serveur" });
-  }
-});*/}
-
-
-
-
-
-// Dans server.js
 app.get("/api/test-token", (req, res) => {
   console.log("Headers reçus:", req.headers);
   res.json({
@@ -3467,24 +3037,18 @@ app.get("/api/test-token", (req, res) => {
   });
 });
 
-// Route pour soumettre un problème
 app.post("/api/support-request", async (req, res) => {
   try {
     const { email, message } = req.body;
     console.log("Tentative d'enregistrement:", { email, message });
 
-    // Validation
     if (!email || !message) {
       return res.status(400).json({
         success: false,
         message: "Email et message sont obligatoires",
       });
     }
-
-    // Déterminer le type d'utilisateur
-    let userType = "etudiant"; // Par défaut étudiant
-
-    // Vérifier si c'est un enseignant
+    let userType = "etudiant"; 
     const [enseignant] = await pool.query(
       "SELECT Email FROM enseignants WHERE Email = ?",
       [email]
@@ -3494,7 +3058,6 @@ app.post("/api/support-request", async (req, res) => {
       userType = "enseignant";
     }
 
-    // Enregistrement
     const [result] = await pool.query(
       "INSERT INTO notifications (user_email, user_type, message) VALUES (?, ?, ?)",
       [email, userType, message]
@@ -3523,7 +3086,6 @@ app.post("/api/support-request", async (req, res) => {
   }
 });
 
-// Route pour récupérer les notifications (admin)
 app.get("/api/admin/notifications", authenticateAdmin, async (req, res) => {
   try {
     const { unread } = req.query;
@@ -3557,7 +3119,6 @@ app.get("/api/admin/notifications", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Route pour marquer comme lue
 app.patch(
   "/api/admin/notifications/:id/read",
   authenticateAdmin,
@@ -3597,13 +3158,7 @@ io.on("connection", (socket) => {
   socket.on('registerUser', ({ audience }) => {
     socket.join([audience, 'tous']);
   });
-  // socket.on('registerAsEnseignant', () => {
-  //   socket.join('enseignants');
-  // });
-
-  // socket.on('registerAsEtudiant', () => {
-  //   socket.join('etudiants');
-  // });
+  
   function emitNotification(notification) {
     io.to(notification.audience).emit('newNotification', notification);
     io.to('tous').emit('newNotification', notification);
@@ -3616,7 +3171,7 @@ io.on("connection", (socket) => {
 });
 
 app.get('/api/notifications/unread', async (req, res) => {
-  const { cin } = req.user; // Récupéré du token JWT
+  const { cin } = req.user; 
   
   try {
     const [notifications] = await pool.query(`
@@ -3635,7 +3190,6 @@ app.get('/api/notifications/unread', async (req, res) => {
   }
 });
 
-// Route : soumettre une réclamation
 app.post("/api/reclamations", async (req, res) => {
   try {
     const { email, message, userType } = req.body;
@@ -3649,7 +3203,6 @@ app.post("/api/reclamations", async (req, res) => {
       [email, message, userType || "autre"]
     );
 
-    // Notifier uniquement les admins connectés
     adminSockets.forEach((socketId) => {
       io.to(socketId).emit("newReclamation", {
         id: result.insertId,
@@ -3678,7 +3231,6 @@ httpServer.listen(5000, () => {
   console.log("Serveur démarré sur http://localhost:5000");
 });
 
-// Route pour récupérer les réclamations (admin)
 app.get("/api/admin/reclamations", authenticateAdmin, async (req, res) => {
   try {
     const [reclamations] = await pool.query(`
@@ -3708,7 +3260,6 @@ app.get("/api/admin/reclamations", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Route pour mettre à jour le statut d'une réclamation
 app.put("/api/admin/reclamations/:id/status", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -3740,10 +3291,6 @@ app.put("/api/admin/reclamations/:id/status", authenticateAdmin, async (req, res
   }
 });
 
-
-
-//Ageeeeeeeents
-
 app.get('/agents', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM agents');
@@ -3753,7 +3300,6 @@ app.get('/agents', async (req, res) => {
   }
 });
 
-// POST create agent
 app.post('/agents', async (req, res) => {
   const { nom, prenom, email, password, departement, role } = req.body;
 
@@ -3773,7 +3319,6 @@ app.post('/agents', async (req, res) => {
   }
 });
 
-// DELETE agent
 app.delete('/agents/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -3784,7 +3329,6 @@ app.delete('/agents/:id', async (req, res) => {
   }
 });
 
-// PUT update agent
 app.put('/agents/:id', async (req, res) => {
   const { id } = req.params;
   const { nom, prenom, email, password, departement, role } = req.body;
@@ -3797,7 +3341,6 @@ app.put('/agents/:id', async (req, res) => {
     let query, params;
 
     if (password && password.trim() !== '') {
-      // Si un nouveau mot de passe est fourni
       const hashedPassword = await bcrypt.hash(password, 10);
       query = `
         UPDATE agents 
@@ -3806,7 +3349,6 @@ app.put('/agents/:id', async (req, res) => {
       `;
       params = [nom, prenom, email, hashedPassword, departement, role, id];
     } else {
-      // Sinon ne pas modifier le mot de passe
       query = `
         UPDATE agents 
         SET nom = ?, prenom = ?, email = ?, departement = ?, role = ? 
@@ -3877,7 +3419,6 @@ app.post('/api/agents/login', async (req, res) => {
   }
 });
 
-// ✅ Route pour récupérer le profil d'un agent connecté
 app.get("/api/agents/profile", authenticate(['Agent', 'Superviseur', 'Administrateur']), async (req, res) => {
   try {
     const [agent] = await pool.query(
@@ -3906,14 +3447,8 @@ app.get("/api/agents/profile", authenticate(['Agent', 'Superviseur', 'Administra
   }
 });
 
-
-
-
-
-// Routes pour les statistiques
 app.get('/api/stats/users', async (req, res) => {
   try {
-    // Comptage des utilisateurs
     const [etudiants] = await pool.query('SELECT COUNT(*) as count FROM etudiant');
     const [enseignants] = await pool.query('SELECT COUNT(*) as count FROM enseignants');
     const [agents] = await pool.query('SELECT COUNT(*) as count FROM agents');
@@ -3936,7 +3471,6 @@ app.get('/api/stats/formations', async (req, res) => {
     const [classes] = await pool.query('SELECT COUNT(*) as count FROM classes');
     const [matieres] = await pool.query('SELECT COUNT(*) as count FROM matieres');
     
-    // Détails par filière
     const [details] = await pool.query(`
       SELECT f.id, f.nom, 
              COUNT(DISTINCT c.id) as classes,
@@ -3964,7 +3498,6 @@ app.get('/api/stats/documents', async (req, res) => {
   try {
     const [total] = await pool.query('SELECT COUNT(*) as count FROM documents');
     
-    // Par type de fichier
     const [types] = await pool.query(`
       SELECT 
         CASE 
@@ -4009,8 +3542,6 @@ app.get('/api/stats/emplois', async (req, res) => {
 app.get('/api/stats/examens', async (req, res) => {
   try {
     const [total] = await pool.query('SELECT COUNT(*) as count FROM examens');
-    
-    // Par type d'examen
     const [types] = await pool.query(`
       SELECT type as name, COUNT(*) as value 
       FROM examens 
@@ -4030,8 +3561,6 @@ app.get('/api/stats/examens', async (req, res) => {
 app.get('/api/stats/evenements', async (req, res) => {
   try {
     const [total] = await pool.query('SELECT COUNT(*) as count FROM evenements');
-    
-    // Prochains événements (dans les 30 prochains jours)
     const [prochains] = await pool.query(`
       SELECT * FROM evenements 
       WHERE date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY)
@@ -4052,8 +3581,6 @@ app.get('/api/stats/evenements', async (req, res) => {
 app.get('/api/stats/reclamations', async (req, res) => {
   try {
     const [total] = await pool.query('SELECT COUNT(*) as count FROM reclamations');
-    
-    // Par statut
     const [status] = await pool.query(`
       SELECT status as name, COUNT(*) as value 
       FROM reclamations 
@@ -4070,13 +3597,10 @@ app.get('/api/stats/reclamations', async (req, res) => {
   }
 });
 
-
 const fetchMatieres = async () => {
   try {
     const res = await axios.get("http://localhost:5000/api/matieres");
     const data = res.data.data || res.data;
-    
-    // Enrichir les données avec les infos semestre
     const enrichedData = data.map(matiere => ({
       ...matiere,
       semestre_data: semestres.find(s => s.id === matiere.semestre_id)
@@ -4093,9 +3617,6 @@ const fetchMatieres = async () => {
   }
 };
 
-
-
-// ✅ Route pour récupérer le profil d'un agent connecté
 app.get("/api/agents/profile", authenticate(['Agent', 'Superviseur', 'Administrateur']), async (req, res) => {
   try {
     const [agent] = await pool.query(
@@ -4124,9 +3645,6 @@ app.get("/api/agents/profile", authenticate(['Agent', 'Superviseur', 'Administra
   }
 });
 
-
-
-// Récupérer les documents d'un enseignant spécifique
 app.get('/api/enseignant/documents/:enseignantId', async (req, res) => {
   try {
     const { enseignantId } = req.params;
@@ -4155,7 +3673,6 @@ app.get('/api/enseignant/documents/:enseignantId', async (req, res) => {
       success: true,
       data: documents.map(doc => ({
         ...doc,
-        // Formatage de la date si nécessaire
         diffusion_date: new Date(doc.diffusion_date).toLocaleDateString()
       }))
     });
@@ -4168,9 +3685,6 @@ app.get('/api/enseignant/documents/:enseignantId', async (req, res) => {
     });
   }
 });
-
-
-
 
 app.get('/api/teacher-documents', authenticatee(['enseignant']), async (req, res) => {
   try {
@@ -4194,8 +3708,6 @@ app.get('/api/teacher-documents', authenticatee(['enseignant']), async (req, res
 app.delete('/api/documents/:id', authenticatee(['enseignant']), async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Vérifier que le document appartient à l'enseignant
     const [document] = await pool.query(
       'SELECT file_path FROM documents WHERE id = ? AND enseignant_id = ?',
       [id, req.user.cin]
@@ -4204,8 +3716,6 @@ app.delete('/api/documents/:id', authenticatee(['enseignant']), async (req, res)
     if (!document.length) {
       return res.status(404).json({ success: false, message: "Document non trouvé" });
     }
-
-    // Supprimer le fichier physique
     if (document[0].file_path) {
       const filePath = path.join(__dirname, document[0].file_path);
       if (fs.existsSync(filePath)) {
@@ -4213,7 +3723,6 @@ app.delete('/api/documents/:id', authenticatee(['enseignant']), async (req, res)
       }
     }
 
-    // Supprimer de la base
     await pool.query('DELETE FROM documents WHERE id = ?', [id]);
     
     res.json({ success: true, message: "Document supprimé" });
@@ -4223,8 +3732,6 @@ app.delete('/api/documents/:id', authenticatee(['enseignant']), async (req, res)
   }
 });
 
-
-// Route pour récupérer les inscriptions
 app.get("/api/inscriptions", async (req, res) => {
   try {
     const [inscriptions] = await pool.query("SELECT * FROM formulaire");
@@ -4241,10 +3748,6 @@ app.get("/api/inscriptions", async (req, res) => {
   }
 });
 
-
-
-
-// Nouvelle route pour obtenir les inscriptions avec les événements
 app.get("/api/inscriptions-with-events", async (req, res) => {
   try {
     const query = `
@@ -4266,20 +3769,12 @@ app.get("/api/inscriptions-with-events", async (req, res) => {
   }
 });
 
-
-
-
-
-// Protégez vos routes
 app.get("/api/protected-route",  authenticate(['enseignant']), async (req, res) => {
   res.json({ message: "Accès autorisé" });
 });
 
 
-// Démarrer le serveur
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Serveur en écoute sur http://localhost:${PORT}`);
-}).on('error', (err) => {
- 
-});
+}).on('error', (err) => {});

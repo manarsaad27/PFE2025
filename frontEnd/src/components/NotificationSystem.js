@@ -25,7 +25,6 @@ const NotificationSystem = ({ audience }) => {
   const [open, setOpen] = useState(false);
   const anchorEl = useRef(null);
 
-  // Charge les notifications
   const loadNotifications = async () => {
     try {
       const { data } = await axios.get(`http://localhost:5000/api/notifications?audience=${audience}`, {
@@ -42,7 +41,6 @@ const NotificationSystem = ({ audience }) => {
     }
   };
 
-  // Gérer l'ouverture/fermeture du popover
   const handleToggleNotifications = () => {
     const newOpenState = !open;
     setOpen(newOpenState);
@@ -53,7 +51,6 @@ const NotificationSystem = ({ audience }) => {
     }
   };
 
-  // Marquer une notification comme lue
   const markAsRead = async (id) => {
     try {
       await axios.patch(`http://localhost:5000/api/notifications/${id}/read`, {}, {
@@ -68,7 +65,7 @@ const NotificationSystem = ({ audience }) => {
     }
   };
 
-  // Marquer toutes comme lues
+
   const markAllNotificationsAsRead = async () => {
     try {
       await axios.put(`http://localhost:5000/api/notifications/mark-as-read?audience=${audience}`);
@@ -80,7 +77,6 @@ const NotificationSystem = ({ audience }) => {
     }
   };
 
-  // Gestion des notifications temps réel
   useEffect(() => {
     if (!token) return;
 

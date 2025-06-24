@@ -159,7 +159,7 @@ const Etudiant = () => {
               textAlign: 'center',
               color: 'white',
               position: 'relative',
-              marginTop: '-3px' // Compensation pour la bande défilante
+              marginTop: '-3px' 
             }}>
               <div style={{
                 maxWidth: '800px',

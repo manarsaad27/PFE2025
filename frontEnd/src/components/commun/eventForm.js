@@ -23,7 +23,6 @@ const EventRegistrationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation frontend
     if (!formData.nom || !formData.cin || !formData.email || !formData.tele || !formData.sexe || !formData.niveauEtude) {
       setSubmitStatus('error');
       return;
@@ -64,8 +63,7 @@ const EventRegistrationForm = () => {
     } catch (error) {
       console.error('Erreur:', error);
       setSubmitStatus('error');
-      // Vous pouvez ajouter un state pour afficher le message d'erreur spécifique
-      // setErrorMessage(error.message);
+    
     }
   };
   return (

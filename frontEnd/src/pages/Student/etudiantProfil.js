@@ -18,7 +18,7 @@ import logoFac from "./../../assets/logoFac.png";
 import io from 'socket.io-client';
 import { motion } from 'framer-motion';
 import NotificationSystem from '../../components/NotificationSystem';
-// Couleurs du thème
+
 const theme = {
   primary: "#4a6cf7",
   secondary: "#657ef8",
@@ -41,7 +41,6 @@ const EtudiantProfil = () => {
   const fileInputRef = useRef();
   const [apercu, setApercu] = useState(null);
 
-  // Charger les données de l'étudiant
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -62,7 +61,6 @@ const EtudiantProfil = () => {
           }
         });
 
-        // Charger les examens
         const examsResponse = await axios.get(`http://localhost:5000/api/examens/etudiant/${cin}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -70,7 +68,6 @@ const EtudiantProfil = () => {
           setExams(examsResponse.data.data);
         }
 
-        // Charger l'emploi du temps
         if (response.data.data.Classe) {
           const emploiRes = await axios.get(
             `http://localhost:5000/api/emplois/classe/${response.data.data.Classe}?type=etudiant`,
@@ -89,7 +86,6 @@ const EtudiantProfil = () => {
           }
         }
       }
-      // Charger les événements
       const eventsRes = await axios.get("http://localhost:5000/api/evenements");
       setEvents(eventsRes.data.data || []);
     } catch (err) {
@@ -102,7 +98,6 @@ const EtudiantProfil = () => {
     fetchData();
   }, []);
 
-  // Gestion de la photo de profil
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -698,7 +693,6 @@ const EtudiantProfil = () => {
   );
 };
 
-// Composant pour la carte d'événement
 const EventCard = ({ event, onClick, theme }) => {
   const eventDate = new Date(event.date);
   const formattedDate = eventDate.toLocaleDateString('fr-FR', {
@@ -790,7 +784,6 @@ const EventCard = ({ event, onClick, theme }) => {
   );
 };
 
-// Composant pour les cartes de statistiques
 const StatCard = ({ title, value, icon, color }) => (
   <motion.div 
     whileHover={{ scale: 1.03 }}

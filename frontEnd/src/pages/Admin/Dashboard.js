@@ -188,7 +188,6 @@ const AdminDashboard = () => {
     }
   ];
 
-  // Charger les notifications
   const loadNotifications = async () => {
     try {
       const { data } = await axios.get("/api/admin/notifications");
@@ -199,7 +198,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Gérer l'ouverture/fermeture du popover
   const handleToggleNotifications = () => {
     setOpen(!open);
     if (hasNewNotification) {
@@ -211,7 +209,6 @@ const AdminDashboard = () => {
     setOpen(false);
   };
 
-  // Marquer une notification comme lue
   const markAsRead = async (id) => {
     try {
       await axios.patch(`/api/admin/notifications/${id}/read`);
@@ -225,7 +222,6 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    // Charger les réclamations existantes depuis l'API
     const fetchReclamations = async () => {
       try {
         const response = await axios.get("http://localhost:5000/r/apieclamations");
@@ -250,7 +246,6 @@ const AdminDashboard = () => {
     };
   }, []);
 
-  // Charger les notifications au montage et toutes les 30 secondes
   useEffect(() => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000);

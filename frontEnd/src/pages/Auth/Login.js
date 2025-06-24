@@ -11,11 +11,11 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Réinitialise l'erreur
+    setError(''); 
     
     try {
       const response = await axios.post(
-        'http://localhost:5000/admin/login', // URL corrigée
+        'http://localhost:5000/admin/login', 
         credentials,
         {
           headers: {

@@ -11,10 +11,7 @@ const Teacher = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const handleLoginClick = () => {
-    // Fonction pour gérer le clic sur le bouton de connexion
     console.log("Bouton de connexion cliqué");
-    // Redirection vers la page de connexion
-    // window.location.href = "/login";
   };
 
   const events = [
@@ -161,7 +158,7 @@ const Teacher = () => {
               textAlign: 'center',
               color: 'white',
               position: 'relative',
-              marginTop: '-3px' // Compensation pour la bande défilante
+              marginTop: '-3px' 
             }}>
               <div style={{
                 maxWidth: '800px',

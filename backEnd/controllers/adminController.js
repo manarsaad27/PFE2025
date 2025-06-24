@@ -38,7 +38,6 @@ exports.createUser = async (req, res) => {
   try {
     const { email, password, role, firstName, lastName, faculty } = req.body;
     
-    // Vérifier si l'email existe déjà
     const [existing] = await pool.query(
       'SELECT id FROM users WHERE email = ?', 
       [email]
@@ -48,10 +47,8 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: 'Email déjà utilisé' });
     }
     
-    // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Insérer le nouvel utilisateur
     const [result] = await pool.query(
       'INSERT INTO users (email, password, role, first_name, last_name, faculty_id) VALUES (?, ?, ?, ?, ?, ?)',
       [email, hashedPassword, role, firstName, lastName, faculty]

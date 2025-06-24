@@ -60,20 +60,18 @@ const Connexion = () => {
           throw new Error(data.message || "Erreur serveur");
         }
   
-        // Stockage cohérent des informations
         localStorage.setItem('token', data.token);
         localStorage.setItem('userRole', data.role);
         
-        // Stockage spécifique selon le rôle
         if (data.role === "enseignant") {
           localStorage.setItem('teacherCin', data.cin);
           localStorage.setItem('teacherEmail', data.email);
-          navigate("/teacherProfil"); // Redirection vers la page des documents
+          navigate("/teacherProfil"); 
         } else if (data.role === "etudiant") {
           localStorage.setItem('studentCin', data.cin);
-          navigate("/etudiantProfil"); // Redirection vers le dashboard étudiant
+          navigate("/etudiantProfil"); 
         } else {
-          navigate("/"); // Redirection par défaut
+          navigate("/"); 
         }
       } catch (error) {
         console.error("Erreur détaillée:", error);

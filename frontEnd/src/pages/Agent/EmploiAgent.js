@@ -49,7 +49,6 @@ const EmploiAgent = () => {
     fichier: null
   });
 
-  // Formatage de la date de diffusion
   const formatDateDiffusion = (dateString) => {
     if (!dateString) return <span style={{ fontStyle: 'italic', color: '#666' }}>Non publié</span>;
     
@@ -57,7 +56,6 @@ const EmploiAgent = () => {
     const now = new Date();
     const diffHours = Math.abs(now - date) / 36e5;
 
-    // Formatage différent selon l'ancienneté
     if (diffHours < 24) {
       return `Aujourd'hui à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
     } else if (diffHours < 48) {
@@ -73,7 +71,6 @@ const EmploiAgent = () => {
     }
   };
 
-  // Chargement des données initiales
   useEffect(() => {
   const fetchData = async () => {
     try {
@@ -86,7 +83,6 @@ const EmploiAgent = () => {
         axios.get(`${API_URL}/enseignants/list`)
       ]);
 
-      // Validation des données
       const validatedSemestres = (semestresRes.data.data || []).map(s => ({
         ...s,
         classe_id: s.classe_id ? s.classe_id : null
@@ -109,8 +105,6 @@ const EmploiAgent = () => {
   fetchData();
 }, []);
    
-
-// Add useEffect to load semesters when class changes
 useEffect(() => {
   const fetchSemesters = async () => {
     if (formData.classe_id) {
@@ -126,7 +120,6 @@ useEffect(() => {
   fetchSemesters();
 }, [formData.classe_id]);
 
-  // Gestion du formulaire
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -145,7 +138,6 @@ useEffect(() => {
     try {
       setLoading(true);
       
-      // Validation
       if (!formData.fichier) {
         setError("Veuillez sélectionner un fichier");
         return;
@@ -186,7 +178,6 @@ useEffect(() => {
         fichier: null
       });
 
-      // Rafraîchir la liste
       const response = await axios.get(`${API_URL}/emplois`);
       setEmplois(response.data.data || []);
 
@@ -198,7 +189,6 @@ useEffect(() => {
     }
   };
 
-  // Fonctions utilitaires
   const getNom = (id, collection) => {
     const item = collection.find(item => item.id == id);
     return item ? item.nom : "-";

@@ -1,4 +1,3 @@
-// hooks/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -11,7 +10,6 @@ export function AuthProvider({ children }) {
   });
 
   useEffect(() => {
-    // Initialiser l'état au chargement
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('userRole');
     
@@ -28,7 +26,6 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', token);
     localStorage.setItem('userRole', role);
     
-    // Stocker les données supplémentaires selon le rôle
     if (role === 'enseignant') {
       localStorage.setItem('teacherCin', additionalData.cin);
       localStorage.setItem('teacherEmail', additionalData.email);

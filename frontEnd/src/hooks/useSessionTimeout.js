@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 export const useSessionTimeout = (timeoutMinutes = 30) => {
   const navigate = useNavigate();
   const [showWarning, setShowWarning] = React.useState(false);
-  // Dans useSessionTimeout.js
 const logout = () => {
   console.log("Déconnexion automatique déclenchée !");
   localStorage.clear(); 

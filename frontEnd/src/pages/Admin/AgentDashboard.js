@@ -204,7 +204,7 @@ const AgentDashboard = () => {
       }
 
       try {
-        console.log("TOKEN utilisé :", token); // pour debug
+        console.log("TOKEN utilisé :", token); 
 
         const res = await axios.get("http://localhost:5000/api/agents/profile", {
           headers: {

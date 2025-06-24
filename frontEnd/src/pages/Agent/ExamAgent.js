@@ -9,7 +9,6 @@ const { Option } = Select;
 
 const AdminExamsAgent = () => {
   const navigate = useNavigate();
-  // États
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -19,19 +18,13 @@ const AdminExamsAgent = () => {
   const [selectedExam, setSelectedExam] = useState(null);
   const [form] = Form.useForm();
   
-  // Données de référence
   const [programs, setPrograms] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [classes, setClasses] = useState([]);
-  
-  // Données filtrées
   const [filteredClasses, setFilteredClasses] = useState([]);
   const [filteredSemesters, setFilteredSemesters] = useState([]);
   const [filteredSubjects, setFilteredSubjects] = useState([]);
-
   const examTypes = ['Examen', 'Contrôle', 'TP', 'Projet'];
-
-  // Fonction utilitaire pour normaliser les données API
   const normalizeApiData = (response) => {
     if (!response) return [];
     if (Array.isArray(response.data?.data)) return response.data.data;
@@ -40,7 +33,6 @@ const AdminExamsAgent = () => {
     return [];
   };
 
-  // Charger les données initiales
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -69,12 +61,11 @@ const AdminExamsAgent = () => {
     fetchExams();
   }, []);
 
-  // Charger les examens
  const fetchExams = async () => {
   setLoading(true);
   try {
     const response = await axios.get('http://localhost:5000/api/examens');
-    console.log('API Response:', response); // Ajoutez cette ligne
+    console.log('API Response:', response); 
     setExams(normalizeApiData(response));
   } catch (error) {
     console.error('Error fetching exams:', error.response?.data || error.message);
@@ -84,8 +75,6 @@ const AdminExamsAgent = () => {
   }
 };
 
-
-  // Charger les classes par filière
   const fetchClassesByProgram = async (programId) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/filieres/${programId}/classes`);
@@ -104,7 +93,6 @@ const AdminExamsAgent = () => {
     }
   };
 
-  // Charger les semestres par classe
   const fetchSemestersByClass = async (classId) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/classes/${classId}/semestres`);
@@ -121,7 +109,6 @@ const AdminExamsAgent = () => {
     }
   };
 
-  // Charger les matières par semestre
   const fetchSubjectsBySemester = async (semesterId) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/semestres/${semesterId}/matieres`);
@@ -134,7 +121,6 @@ const AdminExamsAgent = () => {
     }
   };
 
-  // Gestion des actions
   const handleCreate = () => {
     setCurrentExam(null);
     form.resetFields();
@@ -210,8 +196,6 @@ const AdminExamsAgent = () => {
       console.error('Détails:', error);
     }
   };
-
-  // Colonnes du tableau
   const columns = [
     {
       title: 'Matière',

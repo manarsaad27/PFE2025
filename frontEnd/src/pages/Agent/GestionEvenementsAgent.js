@@ -75,7 +75,6 @@ const GestionEvenementsAgent = () => {
         });
       }
       
-      // Recharger les événements
       const response = await axios.get("http://localhost:5000/api/evenements");
       setEvents(response.data.data);
       handleCloseDialog();
@@ -95,7 +94,6 @@ const GestionEvenementsAgent = () => {
     severity: "success"
   });
   
-  // Et la fonction pour afficher les alertes
   const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
   });

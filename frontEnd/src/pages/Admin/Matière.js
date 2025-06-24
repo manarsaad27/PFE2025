@@ -45,7 +45,6 @@ const GestionMatieres = () => {
     try {
       const res = await axios.get("http://localhost:5000/api/matieres");
       setMatieres(res.data.data || res.data);
-      // Développer toutes les classes par défaut
       const initialExpanded = {};
       res.data.data.forEach(matiere => {
         if (matiere.classe_nom) {
@@ -75,7 +74,7 @@ const GestionMatieres = () => {
   const fetchSemestres = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/semestres");
-      console.log("Semestres chargés:", res.data); // ← Debug ici
+      console.log("Semestres chargés:", res.data); 
       setSemestres(res.data.data || []); 
     } catch (error) {
       console.error("Erreur chargement semestres:", error);
@@ -84,7 +83,7 @@ const GestionMatieres = () => {
         message: "Erreur lors du chargement des semestres",
         severity: "error"
       });
-      setSemestres([]); // Assurez-vous que c'est un tableau vide
+      setSemestres([]); 
     }
   };
 
@@ -100,17 +99,14 @@ const GestionMatieres = () => {
   const formatSemestre = (matiere) => {
     if (!matiere) return "Non défini";
     
-    // 1. Vérifie d'abord semestre_numero direct
     if (matiere.semestre_numero) {
       return `Semestre ${matiere.semestre_numero}`;
     }
     
-    // 2. Vérifie semestre_data (si votre API renvoie un objet imbriqué)
     if (matiere.semestre_data?.numero) {
       return `Semestre ${matiere.semestre_data.numero}`;
     }
     
-    // 3. Cherche dans le tableau semestres
     if (matiere.semestre_id) {
       const semestre = semestres.find(s => s.id === matiere.semestre_id);
       return semestre ? `Semestre ${semestre.numero}` : `ID ${matiere.semestre_id}`;
@@ -119,7 +115,6 @@ const GestionMatieres = () => {
     return "Semestre non spécifié";
   };
 
-  // Grouper les matières par classe
   const matieresParClasse = matieres.reduce((acc, matiere) => {
     const classeNom = matiere.classe_nom || 'Non classé';
     if (!acc[classeNom]) {
@@ -129,13 +124,11 @@ const GestionMatieres = () => {
     return acc;
   }, {});
 
-  // Trier les classes et les matières
   const classesTriees = Object.keys(matieresParClasse)
     .sort((a, b) => a.localeCompare(b))
     .map(classeNom => ({
       classeNom,
       matieres: matieresParClasse[classeNom].sort((a, b) => {
-        // Trier par semestre puis par nom de matière
         const semestreA = a.semestre_numero || semestres.find(s => s.id === a.semestre_id)?.numero || 0;
         const semestreB = b.semestre_numero || semestres.find(s => s.id === b.semestre_id)?.numero || 0;
         

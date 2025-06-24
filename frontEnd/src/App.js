@@ -3,10 +3,9 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from "r
 import Header from "./components/layout/Header/header.js";
 import Footer from "./components/layout/Footer/footer.js";
 import "./styles.css";
-//import { AuthProvider} from "./hooks/useAuth.js";
 import ProtectedRoute from './pages/Auth/ProtectedRoute.js';
 import AgentDashboard from "./pages/Admin/AgentDashboard.js";
-// Routes Admin
+
 import AdminLayout from './pages/Admin/AdminLayout.js';
 import AdminDashboard from './pages/Admin/Dashboard.js';
 import AdminLogin from './pages/Auth/Login.js';
@@ -28,7 +27,7 @@ import Emploi from "./pages/Admin/Emploi.js";
 import AdminExams from "./pages/Admin/AdminExam.js";
 import "./pages/Student/studentDoc.css";
 import { useSessionTimeout } from './hooks/useSessionTimeout.js';
-// Routes publiques
+
 import Connexion from "./pages/Auth/connexion.js";
 import Inscription from "./pages/Auth/inscription.js";
 import InscriptionEN from "./pages/Auth/inscriptionEN.js";
@@ -97,7 +96,7 @@ function AppContent() {
       {shouldShowHeader && <Header />}
 
       <Routes>
-        {/* Routes publiques */}
+       
         <Route path="/" element={<Home />} />
         <Route path="/connexion" element={<Connexion />} />
         <Route path="/inscription" element={<Inscription />} />
@@ -110,16 +109,12 @@ function AppContent() {
         <Route path="/teacherProfil" element={<TeacherProfil />} />
         <Route path="/etudiantProfil" element={<EtudiantProfil />} />
         <Route path="/teacheruploaddoc" element={<TeacherUploadDocument />} />
-        
-        {/* Route login admin (hors layout) */}
+      
         <Route path="/admin/login" element={<AdminLogin />} />
-        
-        {/* Route login agent (hors layout admin) */}
         <Route path="/agent/login" element={<AgentLogin />} />
         <Route path="/agent/dashboard" element={<AgentDashboard />} />
   
 
-        {/* Routes admin imbriquées */}
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
@@ -137,7 +132,7 @@ function AppContent() {
           <Route path="examens" element={<AdminExams />} />
         </Route>
 
-        {/* Routes agent */}
+        
         
 <Route 
   path="/agent" 
