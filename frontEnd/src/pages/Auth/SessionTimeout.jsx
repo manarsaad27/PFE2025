@@ -1,66 +1,66 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Button, Typography, Box } from '@mui/material';
+import { Modal, Button, Typography, Box } from '@mui/material'; 
 
 const SessionTimeout = () => {
   const navigate = useNavigate();
   const [openWarning, setOpenWarning] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(60);
+  const [remainingTime, setRemainingTime] = useState(60); 
 
   const SESSION_TIMEOUT = 3 * 60 * 1000; 
-  const WARNING_TIME = 1 * 60 * 1000;
-
-  let timeout;
-  let warningTimeout;
-  let countdownInterval;
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/connexion');
-  };
-
-  const handleExtendSession = async () => {
-    try {
-      const response = await fetch('/api/extend-session', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-      });
-
-      if (response.ok) {
-        setOpenWarning(false);
-        resetTimers(); 
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
-  const resetTimers = () => {
-    clearTimeout(timeout);
-    clearTimeout(warningTimeout);
-    clearInterval(countdownInterval);
-
-    timeout = setTimeout(() => {
-      handleLogout();
-    }, SESSION_TIMEOUT);
-
-    warningTimeout = setTimeout(() => {
-      setOpenWarning(true);
-      setRemainingTime(60);
-
-      countdownInterval = setInterval(() => {
-        setRemainingTime((prev) => prev - 1);
-      }, 1000);
-    }, SESSION_TIMEOUT - WARNING_TIME);
-  };
+  const WARNING_TIME = 1 * 60 * 1000;    
 
   useEffect(() => {
+    let timeout;
+    let warningTimeout;
+    let countdownInterval;
+
+    const resetTimers = () => {
+      clearTimeout(timeout);
+      clearTimeout(warningTimeout);
+      clearInterval(countdownInterval);
+  
+      timeout = setTimeout(() => {
+        handleLogout();
+      }, SESSION_TIMEOUT);
+
+      warningTimeout = setTimeout(() => {
+        setOpenWarning(true);
+        setRemainingTime(60); 
+        
+        countdownInterval = setInterval(() => {
+          setRemainingTime((prev) => prev - 1);
+        }, 1000);
+      }, SESSION_TIMEOUT - WARNING_TIME);
+    };
+
+    const handleLogout = () => {
+      localStorage.removeItem('token');
+      navigate('/login');
+    };
+
+    const handleExtendSession = async () => {
+      try {
+        const response = await fetch('/api/extend-session', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          },
+        });
+        
+        if (response.ok) {
+          setOpenWarning(false);
+          resetTimers(); 
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    };
+
     const events = ['mousemove', 'keydown', 'click', 'scroll'];
     events.forEach((e) => window.addEventListener(e, resetTimers));
 
-    resetTimers();
+    resetTimers(); 
 
     return () => {
       clearTimeout(timeout);
@@ -68,7 +68,7 @@ const SessionTimeout = () => {
       clearInterval(countdownInterval);
       events.forEach((e) => window.removeEventListener(e, resetTimers));
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <Modal open={openWarning} onClose={() => setOpenWarning(false)}>
